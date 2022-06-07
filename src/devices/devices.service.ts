@@ -7,6 +7,8 @@ import { Device, DeviceDocument } from './entities/device.entity';
 import * as mongoose from 'mongoose';
 import { SubscriptionsService } from 'src/subscriptions/subscriptions.service';
 import valuesSeed from './seed';
+import { QueryDevicesDto } from './dto/query-devices.dto';
+import { FindOptions } from 'src/utils/FindOptions';
 
 @Injectable()
 export class DevicesService {
@@ -28,6 +30,7 @@ export class DevicesService {
     try {
       const subscription = await this.subscriptionService.findById(
         createDeviceDto.subscription,
+        {},
       );
       if (!subscription) {
         this.logger.error('[Create Device]: Subscription Not Found');
@@ -54,12 +57,36 @@ export class DevicesService {
     }
   }
 
-  findAll() {
-    return this.DeviceModel.find();
+  findAll(query: QueryDevicesDto, options?: FindOptions) {
+    const devices = this.DeviceModel.find();
+    if (query && query.p) {
+      const populate = query.p.split(',');
+      devices.populate(populate);
+    }
+    if (options && options.req && options.req.user.subscription) {
+      devices.where('subscription').equals(options.req.user.subscription);
+    }
+    if (options && options.session) {
+      devices.session(options.session);
+    }
+    return devices;
   }
 
-  findById(id: string) {
-    return this.DeviceModel.findById(id);
+  findById(id: string, query: QueryDevicesDto, options?: FindOptions) {
+    const device = this.DeviceModel.findById(id);
+
+    if (query && query.p) {
+      const populate = query.p.split(',');
+      device.populate(populate);
+    }
+    if (options && options.req && options.req.user.subscription) {
+      device.where('subscription').equals(options.req.user.subscription);
+    }
+    if (options && options.session) {
+      device.session(options.session);
+    }
+
+    return device;
   }
 
   _findById(id: string) {

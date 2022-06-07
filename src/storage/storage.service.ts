@@ -79,5 +79,10 @@ export class StorageService {
       performance.measure('insert', 'start', 'end');
       this.logger.debug(JSON.stringify(result.map((res) => res.status)));
     }
+    return device;
+  }
+
+  getStorageModel() {
+    return this.StorageModel;
   }
 }

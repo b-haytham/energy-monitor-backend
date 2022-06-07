@@ -14,6 +14,8 @@ import {
 
 import * as mongoose from 'mongoose';
 import { UsersService } from 'src/users/users.service';
+import { QuerySubscriptionsDto } from './dto/query-subscriptions.dto';
+import { FindOptions } from 'src/utils/FindOptions';
 
 @Injectable()
 export class SubscriptionsService {
@@ -66,11 +68,11 @@ export class SubscriptionsService {
     }
   }
 
-  findAll() {
+  findAll(query: QuerySubscriptionsDto, options?: FindOptions) {
     return this.SubscriptionModel.find();
   }
 
-  findById(id: string) {
+  findById(id: string, query: QuerySubscriptionsDto, options?: FindOptions) {
     return this.SubscriptionModel.findById(id);
   }
 

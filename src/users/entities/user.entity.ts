@@ -43,7 +43,7 @@ export class User {
     autopopulate: true,
     default: null,
   })
-  subscription: null | SubscriptionDocument;
+  subscription: null | string | SubscriptionDocument;
 
   @Prop({ required: true, enum: UserRole })
   role: UserRole;

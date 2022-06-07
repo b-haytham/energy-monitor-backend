@@ -10,6 +10,8 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { DevicesModule } from './devices/devices.module';
 import { MqttModule } from './mqtt/mqtt.module';
 import { StorageModule } from './storage/storage.module';
+import { DataModule } from './data/data.module';
+import { WebsocketModule } from './websocket/websocket.module';
 
 @Module({
   imports: [
@@ -31,6 +33,8 @@ import { StorageModule } from './storage/storage.module';
     DevicesModule,
     MqttModule,
     StorageModule,
+    DataModule,
+    WebsocketModule,
   ],
   controllers: [AppController],
   providers: [AppService],

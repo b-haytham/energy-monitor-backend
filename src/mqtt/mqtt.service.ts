@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { performance, PerformanceObserver } from 'perf_hooks';
 import { StorageService } from 'src/storage/storage.service';
+import { WebsocketGateway } from 'src/websocket/websocket.gateway';
 import { DeviceNotificationDto } from './dto/DeviceNotification.dto';
 
 @Injectable()
@@ -9,7 +10,10 @@ export class MqttService {
 
   private perfObserver: PerformanceObserver;
 
-  constructor(private storageService: StorageService) {
+  constructor(
+    private storageService: StorageService,
+    private websocketGateway: WebsocketGateway,
+  ) {
     // this.initPerf();
   }
 
@@ -22,7 +26,16 @@ export class MqttService {
 
   async handleDeviceNotification(data: DeviceNotificationDto) {
     // performance.mark('start');
-    await this.storageService.store(data);
+    const device = await this.storageService.store(data);
+    if (device) {
+      this.websocketGateway.server
+        .to(['admin', device.subscription as string])
+        .emit(`notification/${device._id}`, data);
+
+      this.websocketGateway.server
+        .to(['admin', device.subscription as string])
+        .emit(`device/notification`, data);
+    }
     // performance.mark('end');
     // performance.measure('storage', 'start', 'end');
   }
