@@ -16,7 +16,7 @@ export class WebsocketService {
   async authenticate(socket: Socket, authenticateDto: AuthenticateDto) {
     const decoded = await this.jwtService.verify(authenticateDto.access_token);
 
-    const user = await this.usersService.findById(decoded.sub);
+    const user = await this.usersService.findById(decoded.sub, {});
 
     if (!user) {
       this.logger.error(`User with id ${decoded.sub} not found`);

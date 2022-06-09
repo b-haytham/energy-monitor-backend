@@ -1,13 +1,14 @@
 import {
   Controller,
   Get,
-  Post,
   Body,
   Param,
   Delete,
   ValidationPipe,
   Put,
   UseGuards,
+  Query,
+  Req,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -15,6 +16,8 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { RolesGuard } from 'src/auth/roles.guard';
 import { Roles } from 'src/auth/roles.decorator';
 import { UserRole } from './entities/user.entity';
+import { QueryUserDto } from './dto/query-user.dto';
+import { Request } from 'express';
 
 @Controller('users')
 export class UsersController {
@@ -26,22 +29,21 @@ export class UsersController {
   // }
 
   @UseGuards(RolesGuard)
-  @Roles(
-    UserRole.ADMIN,
-    UserRole.SUPER_ADMIN,
-    UserRole.USER,
-    UserRole.SUPER_USER,
-  )
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.SUPER_USER)
   @Get()
-  findAll() {
-    return this.usersService.findAll();
+  findAll(@Query(ValidationPipe) query: QueryUserDto, @Req() request: Request) {
+    return this.usersService.findAll(query, { req: request });
   }
 
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.SUPER_USER)
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return this.usersService.findById(id);
+  async findOne(
+    @Param('id') id: string,
+    @Req() request: Request,
+    @Query() query: QueryUserDto,
+  ) {
+    return this.usersService.findById(id, query, { req: request });
   }
 
   @UseGuards(RolesGuard)

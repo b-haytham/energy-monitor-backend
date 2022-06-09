@@ -36,4 +36,12 @@ export class AuthController {
     request.session['access_token'] = res.access_token;
     return res;
   }
+
+  @Post('logout')
+  async logout(@Req() request: Request) {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //@ts-ignore
+    request.session = null;
+    return {};
+  }
 }

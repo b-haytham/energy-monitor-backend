@@ -36,6 +36,7 @@ export class SubscriptionsService {
       // get admin
       const admin = await this.usersService.findById(
         createSubscriptionDto.admin,
+        {},
       );
       if (!admin) {
         this.logger.error('[Create Subscription]: Admin Not Found');
@@ -69,11 +70,25 @@ export class SubscriptionsService {
   }
 
   findAll(query: QuerySubscriptionsDto, options?: FindOptions) {
-    return this.SubscriptionModel.find();
+    const subscriptions = this.SubscriptionModel.find();
+
+    if (query && query.p) {
+      const populate = query.p.split(',');
+      subscriptions.populate(populate);
+    }
+
+    return subscriptions.sort({ createdAt: -1 });
   }
 
   findById(id: string, query: QuerySubscriptionsDto, options?: FindOptions) {
-    return this.SubscriptionModel.findById(id);
+    const subscription = this.SubscriptionModel.findById(id);
+
+    if (query && query.p) {
+      const populate = query.p.split(',');
+      subscription.populate(populate);
+    }
+
+    return subscription;
   }
 
   findByAdmin(admin: string | mongoose.ObjectId) {

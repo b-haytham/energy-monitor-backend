@@ -12,7 +12,7 @@ export class AppService implements OnModuleInit {
 
   async onModuleInit() {
     if (process.env.SUPER_USER_EMAIL && process.env.SUPER_USER_PASSWORD) {
-      const users = await this.usersService.findAll();
+      const users = await this.usersService.findAll({});
       if (!users || users.length === 0) {
         const user = await this.usersService.create({
           first_name: 'Admin',

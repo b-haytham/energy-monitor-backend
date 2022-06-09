@@ -56,7 +56,7 @@ export class RolesGuard implements CanActivate {
       return false;
     }
 
-    const user = await this.usersService.findById(decoded.sub);
+    const user = await this.usersService.findById(decoded.sub, {});
     if (!user) {
       this.logger.error('User not found');
       return false;

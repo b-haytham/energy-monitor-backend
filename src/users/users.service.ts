@@ -7,6 +7,8 @@ import { User, UserDocument } from './entities/user.entity';
 import * as bcrypt from 'bcrypt';
 
 import * as mongoose from 'mongoose';
+import { QueryUserDto } from './dto/query-user.dto';
+import { FindOptions } from 'src/utils/FindOptions';
 
 @Injectable()
 export class UsersService {
@@ -32,8 +34,25 @@ export class UsersService {
     return newUser.save({ session });
   }
 
-  findAll() {
-    return this.UserModel.find();
+  findAll(query: QueryUserDto, options?: FindOptions) {
+    const users = this.UserModel.find();
+
+    if (query && query.p) {
+      const populate = query.p.split(',');
+      users.populate(populate);
+    }
+
+    if (
+      options &&
+      options.req &&
+      options.req.user &&
+      options.req.user.subscription &&
+      options.req.user.role.includes('user')
+    ) {
+      users.where('subscription').equals(options.req.user.subscription);
+    }
+
+    return users.sort({ createdAt: -1 });
   }
 
   async findByEmail(email: string) {
@@ -56,8 +75,20 @@ export class UsersService {
     return user;
   }
 
-  async findById(id: string) {
-    return this.UserModel.findById(id);
+  async findById(id: string, query: QueryUserDto, options?: FindOptions) {
+    const user = this.UserModel.findById(id);
+
+    if (
+      options &&
+      options.req &&
+      options.req.user &&
+      options.req.user.subscription &&
+      options.req.user.role.includes('user')
+    ) {
+      user.where('subscription').equals(options.req.user.subscription);
+    }
+
+    return user;
   }
 
   async updateSubsciption(

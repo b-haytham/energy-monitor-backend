@@ -69,7 +69,7 @@ export class DevicesService {
     if (options && options.session) {
       devices.session(options.session);
     }
-    return devices;
+    return devices.sort({ createdAt: -1 });
   }
 
   findById(id: string, query: QueryDevicesDto, options?: FindOptions) {
