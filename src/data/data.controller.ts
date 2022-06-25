@@ -47,4 +47,19 @@ export class DataController {
   ) {
     return this.dataService.power(query, { req: request });
   }
+
+  @UseGuards(RolesGuard)
+  @Roles(
+    UserRole.USER,
+    UserRole.SUPER_USER,
+    UserRole.ADMIN,
+    UserRole.SUPER_ADMIN,
+  )
+  @Get('overview')
+  getEnergyOverview(
+    @Query(ValidationPipe) query: QueryEnergyDto,
+    @Req() request: Request,
+  ) {
+    return this.dataService.energieOverview(query, { req: request });
+  }
 }

@@ -37,14 +37,18 @@ export class AggregationUtilitiesService {
     }
   }
 
-  public getGroupStage(time: string, other: Record<string, any>) {
+  public getGroupStage(
+    time: string,
+    other: Record<string, any>,
+    isOverview?: boolean,
+  ) {
     switch (time) {
       case '1d':
         return {
           $group: {
             _id: {
               $dateToString: {
-                format: "%Y-%m-%d '%H",
+                format: isOverview ? '%Y-%m-%d' : "%Y-%m-%d '%H",
                 date: '$t',
               },
             },
@@ -56,7 +60,7 @@ export class AggregationUtilitiesService {
           $group: {
             _id: {
               $dateToString: {
-                format: '%Y-%m-%d',
+                format: isOverview ? '%Y-%m' : '%Y-%m-%d',
                 date: '$t',
               },
             },
@@ -69,7 +73,7 @@ export class AggregationUtilitiesService {
           $group: {
             _id: {
               $dateToString: {
-                format: '%Y-%m',
+                format: isOverview ? '%Y' : '%Y-%m',
                 date: '$t',
               },
             },
@@ -81,7 +85,7 @@ export class AggregationUtilitiesService {
           $group: {
             _id: {
               $dateToString: {
-                format: '%Y-%m-%d',
+                format: isOverview ? '%Y-%m' : '%Y-%m-%d',
                 date: '$t',
               },
             },
