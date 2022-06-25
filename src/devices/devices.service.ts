@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { CreateDeviceDto } from './dto/create-device.dto';
 import { UpdateDeviceDto } from './dto/update-device.dto';
@@ -19,7 +24,6 @@ export class DevicesService {
     private DeviceModel: mongoose.Model<DeviceDocument>,
     @InjectConnection()
     private connection: mongoose.Connection,
-
     private subscriptionService: SubscriptionsService,
   ) {}
 
@@ -49,7 +53,7 @@ export class DevicesService {
 
       await session.commitTransaction();
       await session.endSession();
-      return device;
+      return device.populate('subscription');
     } catch (error) {
       await session.abortTransaction();
       await session.endSession();
@@ -69,7 +73,7 @@ export class DevicesService {
     if (options && options.session) {
       devices.session(options.session);
     }
-    return devices.sort({ createdAt: -1 });
+    return devices.populate('subscription').sort({ createdAt: -1 });
   }
 
   findById(id: string, query: QueryDevicesDto, options?: FindOptions) {
@@ -86,15 +90,23 @@ export class DevicesService {
       device.session(options.session);
     }
 
-    return device;
+    return device.populate('subscription');
   }
 
   _findById(id: string) {
     return this.DeviceModel.findById(id);
   }
 
-  update(id: string, updateDeviceDto: UpdateDeviceDto) {
-    return `This action updates a #${id} device`;
+  async update(id: string, updateDeviceDto: UpdateDeviceDto) {
+    const device = await this.DeviceModel.findByIdAndUpdate(
+      id,
+      { $set: updateDeviceDto },
+      { new: true },
+    );
+    if (!device) {
+      throw new NotFoundException('Subscription not found');
+    }
+    return device.populate('subscription');
   }
 
   remove(id: string) {

@@ -3,11 +3,11 @@ import {
   Get,
   Post,
   Body,
-  Patch,
   Param,
   Delete,
   UseGuards,
   Query,
+  Put,
 } from '@nestjs/common';
 import { SubscriptionsService } from './subscriptions.service';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
@@ -48,7 +48,7 @@ export class SubscriptionsController {
 
   @UseGuards(RolesGuard)
   @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
-  @Patch(':id')
+  @Put(':id')
   update(
     @Param('id') id: string,
     @Body(ValidationPipe) updateSubscriptionDto: UpdateSubscriptionDto,

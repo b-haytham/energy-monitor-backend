@@ -61,7 +61,7 @@ export class SubscriptionsService {
 
       await session.commitTransaction();
       await session.endSession();
-      return subscription;
+      return subscription.populate(['admin', 'users']);
     } catch (error) {
       await session.abortTransaction();
       await session.endSession();
@@ -77,7 +77,7 @@ export class SubscriptionsService {
       subscriptions.populate(populate);
     }
 
-    return subscriptions.sort({ createdAt: -1 });
+    return subscriptions.populate(['admin', 'users']).sort({ createdAt: -1 });
   }
 
   findById(id: string, query: QuerySubscriptionsDto, options?: FindOptions) {
@@ -88,15 +88,21 @@ export class SubscriptionsService {
       subscription.populate(populate);
     }
 
-    return subscription;
+    return subscription.populate(['admin', 'users']);
   }
 
   findByAdmin(admin: string | mongoose.ObjectId) {
-    return this.SubscriptionModel.findOne({ admin });
+    return this.SubscriptionModel.findOne({ admin }).populate([
+      'admin',
+      'users',
+    ]);
   }
 
   findByUser(user: string | mongoose.ObjectId) {
-    return this.SubscriptionModel.find({ users: { $in: [user] } });
+    return this.SubscriptionModel.find({ users: { $in: [user] } }).populate([
+      'admin',
+      'users',
+    ]);
   }
 
   async update(id: string, updateSubscriptionDto: UpdateSubscriptionDto) {
@@ -108,7 +114,15 @@ export class SubscriptionsService {
     if (!subscription) {
       throw new NotFoundException('Subscription not found');
     }
-    return subscription;
+    return subscription.populate(['admin', 'users']);
+  }
+
+  async addUser(id: string, user: string, session?: mongoose.ClientSession) {
+    return this.SubscriptionModel.findByIdAndUpdate(
+      id,
+      { $push: { users: user } },
+      { new: true, session },
+    );
   }
 
   remove(id: string) {

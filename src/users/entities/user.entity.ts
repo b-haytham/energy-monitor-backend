@@ -2,7 +2,6 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { SubscriptionDocument } from 'src/subscriptions/entities/subscription.entity';
 
 import * as mongoose from 'mongoose';
-import * as mongooseAutopopulate from 'mongoose-autopopulate';
 
 export type UserDocument = mongoose.Document & User;
 
@@ -40,7 +39,6 @@ export class User {
   @Prop({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Subscription',
-    autopopulate: true,
     default: null,
   })
   subscription: null | string | SubscriptionDocument;
@@ -59,9 +57,5 @@ export class User {
 }
 
 const UserSchema = SchemaFactory.createForClass(User);
-
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-//@ts-ignore
-UserSchema.plugin(mongooseAutopopulate);
 
 export { UserSchema };

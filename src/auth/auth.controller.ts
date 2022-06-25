@@ -19,10 +19,13 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @UseGuards(RolesGuard)
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.SUPER_USER)
   @Post('register')
-  register(@Body(ValidationPipe) createUserDto: CreateUserDto) {
-    return this.authService.register(createUserDto);
+  register(
+    @Body(ValidationPipe) createUserDto: CreateUserDto,
+    @Req() request: Request,
+  ) {
+    return this.authService.register(createUserDto, { req: request });
   }
 
   @Post('login')

@@ -1,4 +1,11 @@
-import { IsEmail, IsEnum, IsString, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsEnum,
+  IsMongoId,
+  IsString,
+  MinLength,
+  ValidateIf,
+} from 'class-validator';
 import { UserRole } from '../entities/user.entity';
 
 export class CreateUserDto {
@@ -19,4 +26,8 @@ export class CreateUserDto {
 
   @IsEnum(UserRole)
   role: UserRole;
+
+  @IsMongoId()
+  @ValidateIf((_, value) => value !== null)
+  subscription: string | null;
 }

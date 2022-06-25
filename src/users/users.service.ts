@@ -52,7 +52,7 @@ export class UsersService {
       users.where('subscription').equals(options.req.user.subscription);
     }
 
-    return users.sort({ createdAt: -1 });
+    return users.populate('subscription').sort({ createdAt: -1 });
   }
 
   async findByEmail(email: string) {
@@ -88,7 +88,7 @@ export class UsersService {
       user.where('subscription').equals(options.req.user.subscription);
     }
 
-    return user;
+    return user.populate('subscription');
   }
 
   async updateSubsciption(
@@ -106,7 +106,9 @@ export class UsersService {
   }
 
   async update(id: string, updateUserDto: UpdateUserDto) {
-    return this.UserModel.findByIdAndUpdate(id, updateUserDto, { new: true });
+    return this.UserModel.findByIdAndUpdate(id, updateUserDto, {
+      new: true,
+    }).populate('subscription');
   }
 
   remove(id: string) {

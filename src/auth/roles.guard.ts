@@ -70,7 +70,7 @@ export class RolesGuard implements CanActivate {
 
     request.user = user;
 
-    if (user.role.includes('USER') && !request.user.subscription) {
+    if (user.role.includes('user') && !request.user.subscription) {
       this.logger.error('User subscription not found');
       return false;
     }

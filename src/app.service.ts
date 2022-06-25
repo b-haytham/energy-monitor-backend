@@ -21,6 +21,7 @@ export class AppService implements OnModuleInit {
           email: process.env.SUPER_USER_EMAIL,
           password: process.env.SUPER_USER_PASSWORD,
           role: UserRole.SUPER_ADMIN,
+          subscription: null,
         });
 
         this.logger.debug('Created admin user', user.email);
