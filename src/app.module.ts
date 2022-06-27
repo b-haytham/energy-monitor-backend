@@ -13,6 +13,8 @@ import { StorageModule } from './storage/storage.module';
 import { DataModule } from './data/data.module';
 import { WebsocketModule } from './websocket/websocket.module';
 import { MailModule } from './mail/mail.module';
+import { BullModule } from '@nestjs/bull';
+import { JobsModule } from './jobs/jobs.module';
 
 @Module({
   imports: [
@@ -28,6 +30,16 @@ import { MailModule } from './mail/mail.module';
         directConnection: true,
       }),
     }),
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        redis: {
+          host: config.get('REDIS_HOST'),
+          port: config.get('REDIS_PORT'),
+        },
+      }),
+    }),
     UsersModule,
     AuthModule,
     SubscriptionsModule,
@@ -37,6 +49,7 @@ import { MailModule } from './mail/mail.module';
     DataModule,
     WebsocketModule,
     MailModule,
+    JobsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

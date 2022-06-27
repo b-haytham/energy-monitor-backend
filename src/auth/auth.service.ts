@@ -4,6 +4,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectConnection } from '@nestjs/mongoose';
@@ -15,9 +16,16 @@ import { ReqOptions } from 'src/utils/FindOptions';
 import { LoginUserDto } from './dto/login-user.dto';
 
 import * as mongoose from 'mongoose';
+import * as bcrypt from 'bcrypt';
+
 import { SubscriptionDocument } from 'src/subscriptions/entities/subscription.entity';
 import { DevicesService } from 'src/devices/devices.service';
 import { MailService } from 'src/mail/mail.service';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -30,6 +38,7 @@ export class AuthService {
     private devicesService: DevicesService,
     @InjectConnection() private connection: mongoose.Connection,
     private mailService: MailService,
+    @InjectQueue('mail') private mailQueue: Queue,
   ) {}
 
   async register(createUserDto: CreateUserDto, options: ReqOptions) {
@@ -125,12 +134,73 @@ export class AuthService {
       email: user.email,
       role: user.role,
     });
-    await this.mailService.sendConfirmMail(
-      user.first_name,
-      user.email,
-      'https://google.com',
-    );
     return { access_token: token, user };
+  }
+
+  async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
+    const user = await this.usersService.findByEmail(forgotPasswordDto.email);
+    if (!user) {
+      this.logger.error('User Not Found');
+      return {};
+    }
+    const token = this.jwtService.sign({ sub: user._id, email: user.email });
+    await this.mailQueue.add('forgot-password', {
+      token,
+      user_id: user._id,
+      name: `${user.first_name} ${user.last_name}`,
+      email: user.email,
+    });
+    return {};
+  }
+
+  async resetPassword(resetPasswordDto: ResetPasswordDto) {
+    let decoded: { sub: string; email: string };
+    try {
+      decoded = this.jwtService.verify(resetPasswordDto.token);
+    } catch (error) {
+      this.logger.error(error);
+      return {};
+    }
+
+    const user = await this.usersService.findByEmail(decoded.email);
+    if (!user) {
+      this.logger.error('[Reset Password]: User Not Found');
+      return {};
+    }
+
+    const hash = await bcrypt.hash(resetPasswordDto.password, 10);
+    user.password = hash;
+
+    await user.save();
+
+    return {};
+  }
+
+  async changePassword(
+    changePasswordDto: ChangePasswordDto,
+    options?: ReqOptions,
+  ) {
+    if (!options && !options.req.user) {
+      throw new UnauthorizedException();
+    }
+
+    const user = options.req.user;
+
+    const passwordMatch = await bcrypt.compare(
+      changePasswordDto.current,
+      user.password,
+    );
+    if (!passwordMatch) {
+      this.logger.error("[Change Passworrd]: password don't match");
+      return {};
+    }
+
+    const hash = await bcrypt.hash(changePasswordDto.new, 10);
+    user.password = hash;
+
+    await user.save();
+
+    return {};
   }
 
   async createDeviceToken(data: { device: string }) {

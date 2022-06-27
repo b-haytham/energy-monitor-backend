@@ -11,7 +11,10 @@ import { Request } from 'express';
 import { CreateUserDto } from 'src/users/dto/create-user.dto';
 import { UserRole } from 'src/users/entities/user.entity';
 import { AuthService } from './auth.service';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginUserDto } from './dto/login-user.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { Roles } from './roles.decorator';
 import { RolesGuard } from './roles.guard';
 
@@ -56,10 +59,38 @@ export class AuthController {
     UserRole.SUPER_USER,
     UserRole.USER,
   )
-
   @Get('me')
   async verifyUser(@Req() request: Request) {
     return request.user;
+  }
+
+  @Post('forgot-password')
+  async forgotPassword(
+    @Body(ValidationPipe) forgotPasswordDto: ForgotPasswordDto,
+  ) {
+    return this.authService.forgotPassword(forgotPasswordDto);
+  }
+
+  @Post('reset-password')
+  async resetPassword(
+    @Body(ValidationPipe) resetPasswordDto: ResetPasswordDto,
+  ) {
+    return this.authService.resetPassword(resetPasswordDto);
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles(
+    UserRole.SUPER_ADMIN,
+    UserRole.ADMIN,
+    UserRole.SUPER_USER,
+    UserRole.USER,
+  )
+  @Post('change-password')
+  async changePassword(
+    @Body(ValidationPipe) changePasswordDto: ChangePasswordDto,
+    @Req() request: Request,
+  ) {
+    return this.authService.changePassword(changePasswordDto, { req: request });
   }
 
   @UseGuards(RolesGuard)
