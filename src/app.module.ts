@@ -12,6 +12,7 @@ import { MqttModule } from './mqtt/mqtt.module';
 import { StorageModule } from './storage/storage.module';
 import { DataModule } from './data/data.module';
 import { WebsocketModule } from './websocket/websocket.module';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { WebsocketModule } from './websocket/websocket.module';
     StorageModule,
     DataModule,
     WebsocketModule,
+    MailModule,
   ],
   controllers: [AppController],
   providers: [AppService],

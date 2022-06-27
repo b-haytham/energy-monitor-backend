@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   Post,
   Req,
   UseGuards,
@@ -46,5 +47,30 @@ export class AuthController {
     //@ts-ignore
     request.session = null;
     return {};
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles(
+    UserRole.SUPER_ADMIN,
+    UserRole.ADMIN,
+    UserRole.SUPER_USER,
+    UserRole.USER,
+  )
+
+  @Get('me')
+  async verifyUser(@Req() request: Request) {
+    return request.user;
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Post('devices/token-create')
+  async createDeviceToken(@Body() data: { device: string }) {
+    return await this.authService.createDeviceToken(data);
+  }
+
+  @Post('devices/token-verify')
+  async verifyDeviceToken(@Body() data: { access_token: string }) {
+    return await this.authService.verifyDeviceToken(data);
   }
 }

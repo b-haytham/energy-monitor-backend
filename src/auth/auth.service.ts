@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectConnection } from '@nestjs/mongoose';
@@ -15,6 +16,8 @@ import { LoginUserDto } from './dto/login-user.dto';
 
 import * as mongoose from 'mongoose';
 import { SubscriptionDocument } from 'src/subscriptions/entities/subscription.entity';
+import { DevicesService } from 'src/devices/devices.service';
+import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class AuthService {
@@ -24,7 +27,9 @@ export class AuthService {
     private usersService: UsersService,
     private jwtService: JwtService,
     private subscriptionsService: SubscriptionsService,
+    private devicesService: DevicesService,
     @InjectConnection() private connection: mongoose.Connection,
+    private mailService: MailService,
   ) {}
 
   async register(createUserDto: CreateUserDto, options: ReqOptions) {
@@ -120,6 +125,42 @@ export class AuthService {
       email: user.email,
       role: user.role,
     });
+    await this.mailService.sendConfirmMail(
+      user.first_name,
+      user.email,
+      'https://google.com',
+    );
     return { access_token: token, user };
+  }
+
+  async createDeviceToken(data: { device: string }) {
+    const device = await this.devicesService._findById(data.device);
+    if (!device) {
+      throw new NotFoundException('Device Not Found');
+    }
+
+    const token = this.jwtService.sign({
+      sub: device._id,
+      subscription: device.subscription,
+    });
+    await device.populate('subscription');
+    return { access_token: token, device };
+  }
+
+  async verifyDeviceToken(data: { access_token: string }) {
+    try {
+      const payload = this.jwtService.decode(data.access_token) as {
+        sub: string;
+        subscription: string;
+      };
+      const device = await this.devicesService._findById(payload.sub);
+      if (!device) {
+        throw new BadRequestException('Device Not Found');
+      }
+      return device.populate('subscription');
+    } catch (error) {
+      this.logger.error('Verify Device Token Error: ${error.message}');
+      throw error;
+    }
   }
 }
