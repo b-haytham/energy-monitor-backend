@@ -8,7 +8,7 @@ export class MailService {
   constructor(private mailerService: MailerService) {}
 
   async sendConfirmMail(user: string, email: string, url: string) {
-    await this.mailerService.sendMail({
+    return this.mailerService.sendMail({
       to: email,
       subject: 'Welcome to Nice App! Confirm your Email',
       template: './confirmation',
