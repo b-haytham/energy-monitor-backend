@@ -86,7 +86,7 @@ export class AlertsService {
   }
 
   findAll(options?: FindOptions) {
-    const users = this._findAll();
+    const alerts = this._findAll();
     if (!options) {
       this.logger.error(
         '[Create]: No Request passed to service: "Probably unauthenticated"',
@@ -95,13 +95,13 @@ export class AlertsService {
     }
     const loggedInUser = options.req.user;
     if (loggedInUser.role.includes('user')) {
-      users.where(
+      alerts.where(
         'subscription',
         (loggedInUser.subscription as SubscriptionDocument)._id,
       );
     }
 
-    return users.populate(['user', 'device']);
+    return alerts.populate(['user', 'device']);
   }
 
   _findAll() {
@@ -109,7 +109,7 @@ export class AlertsService {
   }
 
   findById(id: string, options?: FindOptions) {
-    const user = this._findById(id);
+    const alert = this._findById(id);
     if (!options) {
       this.logger.error(
         '[Create]: No Request passed to service: "Probably unauthenticated"',
@@ -118,12 +118,12 @@ export class AlertsService {
     }
     const loggedInUser = options.req.user;
     if (loggedInUser.role.includes('user')) {
-      user.where(
+      alert.where(
         'subscription',
         (loggedInUser.subscription as SubscriptionDocument)._id,
       );
     }
-    return this._findById(id);
+    return alert.populate(['user', 'device']);
   }
 
   _findById(id: string) {
