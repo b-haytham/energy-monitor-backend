@@ -2,7 +2,9 @@ import { MailerService } from '@nestjs-modules/mailer';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { join } from 'path';
+import { TriggeredAlertsDocument } from 'src/alerts/entities/triggered-alerts.entity';
 import { ReportDocument } from 'src/reports/entities/report.entity';
+import { UserDocument } from 'src/users/entities/user.entity';
 
 @Injectable()
 export class MailService {
@@ -57,6 +59,19 @@ export class MailService {
           filename: 'report.pdf',
         },
       ],
+    });
+  }
+
+  async sendTriggeredAlert(triggered_alert: TriggeredAlertsDocument) {
+    return this.mailerService.sendMail({
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      //@ts-ignore
+      to: (triggered_alert.alert.user as UserDocument).email,
+      subject: 'Alert',
+      template: './triggered-alert',
+      context: {
+        triggered_alert,
+      },
     });
   }
 }

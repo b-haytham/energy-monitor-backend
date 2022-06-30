@@ -12,6 +12,13 @@ import { join } from 'path';
 import { compile as compileTemplate } from 'handlebars';
 
 import * as puppeteer from 'puppeteer';
+import { DeviceNotificationDto } from 'src/mqtt/dto/DeviceNotification.dto';
+import { AlertsService } from 'src/alerts/alerts.service';
+import {
+  AlertCondition,
+  AlertDocument,
+} from 'src/alerts/entities/alert.entity';
+import { CreateTriggeredAlertDto } from 'src/alerts/dto/create-triggered-alert.dto';
 
 @Injectable()
 export class JobsService {
@@ -20,6 +27,7 @@ export class JobsService {
   constructor(
     private dataService: DataService,
     private reportsService: ReportsService,
+    private alertsService: AlertsService,
     @InjectQueue('mail') private mailQueue: Queue,
   ) {}
 
@@ -77,10 +85,16 @@ export class JobsService {
 
     const pdf_name = `report-${Date.now()}.pdf`;
     const pdf_path = join(__dirname, '..', 'assets', pdf_name);
-    const stylessheet_path = join(__dirname, '..', 'assets', 'css', 'report.css');
+    const stylessheet_path = join(
+      __dirname,
+      '..',
+      'assets',
+      'css',
+      'report.css',
+    );
 
     try {
-      await this.createPdf({html, output_path: pdf_path, stylessheet_path});
+      await this.createPdf({ html, output_path: pdf_path, stylessheet_path });
     } catch (error) {
       this.logger.error(error);
     }
@@ -97,20 +111,90 @@ export class JobsService {
     return report.save();
   }
 
+  async processNotification(data: {
+    device: DeviceDocument;
+    notification: DeviceNotificationDto;
+  }) {
+    this.logger.log('Handling notification');
+    this.logger.log(data.notification);
+    const alerts = await this.alertsService
+      ._findByDevice(data.notification.d)
+      .populate(['user', 'device']);
+
+    for (const alert of alerts) {
+      this.logger.debug(alert._id);
+      if (this.checkAlertCondition(alert, data.notification)) {
+        const triggeredAlert = await this.alertsService.createTriggeredAlert(
+          new CreateTriggeredAlertDto({
+            alert: alert._id,
+            value: data.notification.p[alert.value_name],
+          }),
+        );
+
+        // populate user field in triggered alert
+        (triggeredAlert.alert as AlertDocument).user = alert.user;
+
+        await this.mailQueue.add('triggered-alert', triggeredAlert);
+      }
+    }
+  }
+
+  checkAlertCondition(
+    alert: AlertDocument,
+    notification: DeviceNotificationDto,
+  ) {
+    const alert_target_value = alert.value_name;
+    switch (alert.if.condition) {
+      case AlertCondition.GREATER_THAN:
+        if (alert_target_value in notification.p) {
+          this.logger.debug(
+            `${notification.p[alert_target_value]} > ${alert.if.value}`,
+          );
+          return notification.p[alert_target_value] > alert.if.value;
+        }
+        return false;
+
+      case AlertCondition.LESS_THAN:
+        if (alert_target_value in notification.p) {
+          this.logger.debug(
+            `${notification.p[alert_target_value]} < ${alert.if.value}`,
+          );
+          return notification.p[alert_target_value] < alert.if.value;
+        }
+        return false;
+
+      case AlertCondition.EQUALS:
+        if (alert_target_value in notification.p) {
+          this.logger.debug(
+            `${notification.p[alert_target_value]} === ${alert.if.value}`,
+          );
+          return notification.p[alert_target_value] === alert.if.value;
+        }
+        return false;
+
+      default:
+        return false;
+    }
+  }
+
   compileTemplate(path: string, data: any) {
     const template = readFileSync(path);
     const compiled = compileTemplate(template.toString('utf8'));
     return compiled(data);
   }
 
-  async createPdf(data: {html: string, output_path: string, stylessheet_path?: string}) {
+  async createPdf(data: {
+    html: string;
+    output_path: string;
+    stylessheet_path?: string;
+  }) {
     const br = await puppeteer.launch({ headless: true });
     const page = await br.newPage();
     await page.setContent(data.html);
     // todo add style tag
-  
+
     if (data.stylessheet_path) {
-      await page.addStyleTag({ path: data.stylessheet_path })
+      await page.addStyleTag({ path: data.stylessheet_path });
     }
 
     await page.pdf({
@@ -122,7 +206,7 @@ export class JobsService {
       margin: {
         top: 20,
         right: 20,
-        left: 20
+        left: 20,
       },
     });
 

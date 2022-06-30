@@ -1,10 +1,12 @@
 import { BullModule } from '@nestjs/bull';
 import { Global, Module } from '@nestjs/common';
+import { AlertsModule } from 'src/alerts/alerts.module';
 import { DataModule } from 'src/data/data.module';
 import { ReportsModule } from 'src/reports/reports.module';
 import { SubscriptionsModule } from 'src/subscriptions/subscriptions.module';
 import { JobsService } from './jobs.service';
 import { MailProcessor } from './mail.processor';
+import { NotificationsProcessor } from './notifications.processor';
 import { ReportsProcessor } from './reports.processor';
 
 @Global()
@@ -16,11 +18,20 @@ import { ReportsProcessor } from './reports.processor';
     BullModule.registerQueue({
       name: 'reports',
     }),
+    BullModule.registerQueue({
+      name: 'notifications',
+    }),
     SubscriptionsModule,
     DataModule,
     ReportsModule,
+    AlertsModule,
   ],
-  providers: [JobsService, MailProcessor, ReportsProcessor],
+  providers: [
+    JobsService,
+    MailProcessor,
+    ReportsProcessor,
+    NotificationsProcessor,
+  ],
   exports: [BullModule],
 })
 export class JobsModule {}

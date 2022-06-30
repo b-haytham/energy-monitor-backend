@@ -1,4 +1,6 @@
+import { InjectQueue } from '@nestjs/bull';
 import { Injectable, Logger } from '@nestjs/common';
+import { Queue } from 'bull';
 import { performance, PerformanceObserver } from 'perf_hooks';
 import { StorageService } from 'src/storage/storage.service';
 import { WebsocketGateway } from 'src/websocket/websocket.gateway';
@@ -13,6 +15,7 @@ export class MqttService {
   constructor(
     private storageService: StorageService,
     private websocketGateway: WebsocketGateway,
+    @InjectQueue('notifications') private notificationsQueue: Queue,
   ) {
     // this.initPerf();
   }
@@ -36,6 +39,12 @@ export class MqttService {
         .to(['admin', device.subscription as string])
         .emit(`device/notification`, data);
     }
+
+    await this.notificationsQueue.add('notification', {
+      device,
+      notification: data,
+    });
+
     // performance.mark('end');
     // performance.measure('storage', 'start', 'end');
   }

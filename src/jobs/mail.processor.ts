@@ -53,4 +53,15 @@ export class MailProcessor {
       this.logger.error(error);
     }
   }
+
+  @Process('triggered-alert')
+  async processTriggeredAlert(job: Job) {
+    this.logger.debug('ALERT>>>>');
+    this.logger.debug(job.data);
+    try {
+      await this.mailService.sendTriggeredAlert(job.data);
+    } catch (error) {
+      this.logger.error(error);
+    }
+  }
 }
