@@ -41,4 +41,16 @@ export class MailProcessor {
       this.logger.error(error);
     }
   }
+
+  @Process('report-done')
+  async processReportDone(job: Job) {
+    try {
+      await this.mailService.sendReportDone({
+        users: job.data.users,
+        report: job.data.report,
+      });
+    } catch (error) {
+      this.logger.error(error);
+    }
+  }
 }

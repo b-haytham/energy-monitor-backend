@@ -1,0 +1,38 @@
+<div class="head">
+  <div class="head-item">
+  </div>
+  <div class="head-item">
+    <p>{{ subscription.name }}</p>
+    <p>{{ subscription.email }}</p>
+    <p>{{ subscription.phone }}</p>
+    <p>{{ subscription.address.country }} {{ subscription.address.address }} {{ subscription.address.zip }}</p>
+  </div>
+</div>
+<div class="title-container">
+  <h1 class="title">This is a report for last month</h1
+</div>
+
+<p>this is a report {{ total }}</p>
+<p>Total {{ cost }}</p>
+
+<div class="table-container">
+  <table>
+  <tr>
+    <th>Device name</th>
+    <th>Enegy consumed</th>
+    <th>Estimate Cost</th>
+  </tr>
+  {{#each items }}
+    <tr>
+      <td>{{this.device_name}}</td>
+      <td>{{this.consumed}}</td>
+      <td>{{this.cost}}</td>
+    </tr>
+  {{/each}}
+  <tr class="last">
+    <td>Total</td>
+    <td>{{total}}</td>
+    <td>{{cost}}</td>
+  </tr>
+</table>
+</div>

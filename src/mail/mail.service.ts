@@ -1,6 +1,8 @@
 import { MailerService } from '@nestjs-modules/mailer';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { join } from 'path';
+import { ReportDocument } from 'src/reports/entities/report.entity';
 
 @Injectable()
 export class MailService {
@@ -40,6 +42,21 @@ export class MailService {
         url,
         name: data.name,
       },
+    });
+  }
+
+  async sendReportDone(data: { users: string[]; report: ReportDocument }) {
+    return this.mailerService.sendMail({
+      to: data.users,
+      subject: 'Report',
+      template: './report-mail',
+      context: {},
+      attachments: [
+        {
+          path: join(__dirname, '..') + data.report.file.path,
+          filename: 'report.pdf',
+        },
+      ],
     });
   }
 }

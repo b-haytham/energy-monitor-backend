@@ -15,6 +15,8 @@ import { WebsocketModule } from './websocket/websocket.module';
 import { MailModule } from './mail/mail.module';
 import { BullModule } from '@nestjs/bull';
 import { JobsModule } from './jobs/jobs.module';
+import { ReportsModule } from './reports/reports.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -40,6 +42,7 @@ import { JobsModule } from './jobs/jobs.module';
         },
       }),
     }),
+    ScheduleModule.forRoot(),
     UsersModule,
     AuthModule,
     SubscriptionsModule,
@@ -50,6 +53,7 @@ import { JobsModule } from './jobs/jobs.module';
     WebsocketModule,
     MailModule,
     JobsModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -80,6 +80,10 @@ export class SubscriptionsService {
     return subscriptions.populate(['admin', 'users']).sort({ createdAt: -1 });
   }
 
+  _findAll() {
+    return this.SubscriptionModel.find({});
+  }
+
   findById(id: string, query: QuerySubscriptionsDto, options?: FindOptions) {
     const subscription = this.SubscriptionModel.findById(id);
 
@@ -89,6 +93,10 @@ export class SubscriptionsService {
     }
 
     return subscription.populate(['admin', 'users']);
+  }
+
+  _findById(id: string) {
+    return this.SubscriptionModel.findById(id);
   }
 
   findByAdmin(admin: string | mongoose.ObjectId) {

@@ -9,5 +9,6 @@ import { DevicesModule } from 'src/devices/devices.module';
   imports: [StorageModule, DevicesModule],
   controllers: [DataController],
   providers: [DataService, AggregationUtilitiesService],
+  exports: [DataService],
 })
 export class DataModule {}

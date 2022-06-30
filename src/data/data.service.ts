@@ -9,10 +9,13 @@ import { AggregationUtilitiesService } from './aggregation-utilities.service';
 import { QueryEnergyDto } from './dto/query-energy.dto';
 import { QueryPowerDto } from './dto/query-power.dto';
 
+import * as mongoose from 'mongoose';
 import * as dayjs from 'dayjs';
+
 import { DevicesService } from 'src/devices/devices.service';
 import { FindOptions } from 'src/utils/FindOptions';
 import { DeviceDocument } from 'src/devices/entities/device.entity';
+import { type } from 'os';
 
 @Injectable()
 export class DataService {
@@ -59,25 +62,26 @@ export class DataService {
 
     this.checkIsAuthorized(device, query, options);
 
-    const match = this.aggregationUtils.getMatchStage(query.t, {
-      's.d': device._id,
-      's.v': 'e',
-    });
-    const group = this.aggregationUtils.getGroupStage(query.t, {
-      max: { $last: '$v' },
-    });
-
-    const windowStage = this.aggregationUtils.getWindowingStage();
-
-    const addFields = this.aggregationUtils.getAddFieldsStage();
-
-    const pipeline = [match, group, windowStage, addFields];
-
-    const StorageModel = this.storageService.getStorageModel();
-
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    //@ts-ignore
-    return StorageModel.aggregate(pipeline);
+    // const match = this.aggregationUtils.getMatchStage(query.t, {
+    //   's.d': device._id,
+    //   's.v': 'e',
+    // });
+    // const group = this.aggregationUtils.getGroupStage(query.t, {
+    //   max: { $last: '$v' },
+    // });
+    //
+    // const windowStage = this.aggregationUtils.getWindowingStage();
+    //
+    // const addFields = this.aggregationUtils.getAddFieldsStage();
+    //
+    // const pipeline = [match, group, windowStage, addFields];
+    //
+    // const StorageModel = this.storageService.getStorageModel();
+    //
+    // // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // //@ts-ignore
+    // return StorageModel.aggregate(pipeline);
+    return this._energieConsumptionAggregation(device._id, query.t);
   }
 
   async power(query: QueryPowerDto, options?: FindOptions) {
@@ -117,6 +121,39 @@ export class DataService {
         max: { $last: '$v' },
       },
       true,
+    );
+
+    const windowStage = this.aggregationUtils.getWindowingStage();
+
+    const addFields = this.aggregationUtils.getAddFieldsStage();
+
+    const pipeline = [match, group, windowStage, addFields];
+
+    const StorageModel = this.storageService.getStorageModel();
+
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //@ts-ignore
+    return StorageModel.aggregate(pipeline);
+  }
+
+  _energieConsumptionAggregation(
+    device: string | mongoose.ObjectId,
+    time: string,
+    isExactTime?: boolean,
+  ) {
+    const deviceId =
+      typeof device === 'string' ? new mongoose.Types.ObjectId(device) : device;
+
+    const match = this.aggregationUtils.getMatchStage(time, {
+      's.d': deviceId,
+      's.v': 'e',
+    });
+    const group = this.aggregationUtils.getGroupStage(
+      time,
+      {
+        max: { $last: '$v' },
+      },
+      isExactTime ? true : false,
     );
 
     const windowStage = this.aggregationUtils.getWindowingStage();
