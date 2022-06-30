@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { CreateAlertDto } from './dto/create-alert.dto';
@@ -95,10 +96,7 @@ export class AlertsService {
     }
     const loggedInUser = options.req.user;
     if (loggedInUser.role.includes('user')) {
-      alerts.where(
-        'subscription',
-        (loggedInUser.subscription as SubscriptionDocument)._id,
-      );
+      alerts.where('user', loggedInUser._id);
     }
 
     return alerts.populate(['user', 'device']);
@@ -108,7 +106,7 @@ export class AlertsService {
     return this.AlertModel.find({}).sort({ createdAt: -1 });
   }
 
-  findById(id: string, options?: FindOptions) {
+  async findById(id: string, options?: FindOptions) {
     const alert = this._findById(id);
     if (!options) {
       this.logger.error(
@@ -118,10 +116,7 @@ export class AlertsService {
     }
     const loggedInUser = options.req.user;
     if (loggedInUser.role.includes('user')) {
-      alert.where(
-        'subscription',
-        (loggedInUser.subscription as SubscriptionDocument)._id,
-      );
+      alert.where('user', loggedInUser._id);
     }
     return alert.populate(['user', 'device']);
   }
@@ -134,11 +129,27 @@ export class AlertsService {
     return this.AlertModel.find({ device });
   }
 
-  update(id: string, updateAlertDto: UpdateAlertDto) {
-    return `This action updates a #${id} alert`;
+  async update(
+    id: string,
+    updateAlertDto: UpdateAlertDto,
+    options: ReqOptions,
+  ) {
+    const alert = await this.findById(id, options);
+    if (!alert) {
+      this.logger.error('[Update]: Alert not found');
+      throw new NotFoundException('Alert Not Found');
+    }
+    alert.set(updateAlertDto);
+    return alert.save();
   }
 
-  remove(id: string) {
-    return `This action removes a #${id} alert`;
+  async remove(id: string, options: ReqOptions) {
+    const alert = await this.findById(id, options);
+    if (!alert) {
+      this.logger.error('[Remove]: Alert not found');
+      throw new NotFoundException('Alert Not Found');
+    }
+    await alert.delete();
+    return alert;
   }
 }

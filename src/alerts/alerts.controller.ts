@@ -3,12 +3,12 @@ import {
   Get,
   Post,
   Body,
-  Patch,
   Param,
   Delete,
   UseGuards,
   ValidationPipe,
   Req,
+  Put,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { Roles } from 'src/auth/roles.decorator';
@@ -68,9 +68,13 @@ export class AlertsController {
     UserRole.ADMIN,
     UserRole.SUPER_ADMIN,
   )
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAlertDto: UpdateAlertDto) {
-    return this.alertsService.update(id, updateAlertDto);
+  @Put(':id')
+  update(
+    @Param('id') id: string,
+    @Body() updateAlertDto: UpdateAlertDto,
+    @Req() request: Request,
+  ) {
+    return this.alertsService.update(id, updateAlertDto, { req: request });
   }
 
   @UseGuards(RolesGuard)
@@ -81,7 +85,7 @@ export class AlertsController {
     UserRole.SUPER_ADMIN,
   )
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.alertsService.remove(id);
+  remove(@Param('id') id: string, @Req() request: Request) {
+    return this.alertsService.remove(id, { req: request });
   }
 }
