@@ -1,14 +1,23 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
+import {
+  BadRequestException,
+  ForbiddenException,
+  forwardRef,
+  Inject,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { User, UserDocument } from './entities/user.entity';
+import { User, UserDocument, UserRole } from './entities/user.entity';
 
 import * as bcrypt from 'bcrypt';
 
 import * as mongoose from 'mongoose';
 import { QueryUserDto } from './dto/query-user.dto';
-import { FindOptions } from 'src/utils/FindOptions';
+import { FindOptions, ReqOptions } from 'src/utils/FindOptions';
+import { SubscriptionDocument } from 'src/subscriptions/entities/subscription.entity';
 
 @Injectable()
 export class UsersService {
@@ -16,6 +25,7 @@ export class UsersService {
 
   constructor(
     @InjectModel(User.name) private UserModel: mongoose.Model<UserDocument>,
+    @InjectConnection() private connection: mongoose.Connection,
   ) {}
 
   async create(createUserDto: CreateUserDto, session?: mongoose.ClientSession) {
@@ -91,6 +101,10 @@ export class UsersService {
     return user.populate('subscription');
   }
 
+  _findById(id: string) {
+    return this.UserModel.findById(id);
+  }
+
   async updateSubsciption(
     id: string,
     subscription: string,
@@ -111,7 +125,71 @@ export class UsersService {
     }).populate('subscription');
   }
 
-  remove(id: string) {
-    return `This action removes a #${id} user`;
+  async remove(id: string, options: ReqOptions) {
+    /*
+       TODO FIX THIS --
+    */
+    const loggedInUser = options.req.user;
+    const user = await this._findById(id).populate('subscription');
+
+    if (!user) {
+      throw new NotFoundException('User Not Found');
+    }
+
+    if (loggedInUser.role.includes('user') && user.role.includes('admin')) {
+      throw new ForbiddenException();
+    }
+
+    if (
+      loggedInUser.role == UserRole.ADMIN &&
+      user.role == UserRole.SUPER_ADMIN
+    ) {
+      throw new ForbiddenException();
+    }
+
+    if (
+      loggedInUser.role.includes('user') &&
+      !loggedInUser.subscription &&
+      !user.subscription
+    ) {
+      throw new ForbiddenException();
+    }
+
+    if (user.role == UserRole.SUPER_USER && user.subscription) {
+      throw new BadRequestException('Delete Subscription First');
+    }
+
+    if (
+      loggedInUser.role.includes('user') &&
+      (loggedInUser.subscription as SubscriptionDocument)._id.toString() !==
+        (user.subscription as SubscriptionDocument)._id.toString()
+    ) {
+      this.logger.error("[Remove]: subscriptions don't match");
+      throw new ForbiddenException();
+    }
+
+    const session = await this.connection.startSession();
+    session.startTransaction();
+
+    try {
+      if (user.role == UserRole.USER) {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        //@ts-ignore
+        (user.subscription as SubscriptionDocument).users.pull(user._id);
+        await (user.subscription as SubscriptionDocument).save({ session });
+        await user.delete({ session });
+      }
+
+      await user.delete({ session });
+
+      await session.commitTransaction();
+      await session.endSession();
+      return user;
+    } catch (error) {
+      this.logger.error(error);
+      await session.abortTransaction();
+      await session.endSession();
+      throw error;
+    }
   }
 }

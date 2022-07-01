@@ -15,7 +15,9 @@ import {
 import * as mongoose from 'mongoose';
 import { UsersService } from 'src/users/users.service';
 import { QuerySubscriptionsDto } from './dto/query-subscriptions.dto';
-import { FindOptions } from 'src/utils/FindOptions';
+import { FindOptions, ReqOptions } from 'src/utils/FindOptions';
+import { UserDocument } from 'src/users/entities/user.entity';
+import { DeviceDocument } from 'src/devices/entities/device.entity';
 
 @Injectable()
 export class SubscriptionsService {
@@ -133,7 +135,64 @@ export class SubscriptionsService {
     );
   }
 
-  remove(id: string) {
-    return `This action removes a #${id} subscription`;
+  async deleteDevice(
+    id: string,
+    device: string,
+    session?: mongoose.ClientSession,
+  ) {
+    return this.SubscriptionModel.findByIdAndUpdate(
+      id,
+      { $pull: { devices: device } },
+      { new: true, session },
+    );
+  }
+
+  async remove(id: string, _: ReqOptions) {
+    const subscription = await this._findById(id).populate([
+      'admin',
+      'users',
+      'devices',
+    ]);
+
+    if (!subscription) {
+      throw new NotFoundException('Subscription Not Found');
+    }
+
+    const session = await this.connection.startSession();
+    session.startTransaction();
+
+    try {
+      const admin = subscription.admin as UserDocument;
+
+      const users = subscription.users as UserDocument[];
+
+      const devices = subscription.devices as DeviceDocument[];
+
+      const userPromises = users.map((u) => u.delete({ session }));
+      const devicePromises = devices.map((d) => d.delete({ session }));
+
+      // very dangerous??
+      const promises = [
+        admin.delete({ session }),
+        ...userPromises,
+        ...devicePromises,
+        subscription.delete({ session }),
+      ];
+
+      console.log(promises);
+
+      const res = await Promise.all(promises);
+
+      console.log(res);
+
+      await session.commitTransaction();
+      await session.endSession();
+      return subscription;
+    } catch (error) {
+      this.logger.error(error);
+      await session.abortTransaction();
+      await session.endSession();
+      throw error;
+    }
   }
 }

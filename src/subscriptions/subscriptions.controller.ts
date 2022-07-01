@@ -8,6 +8,7 @@ import {
   UseGuards,
   Query,
   Put,
+  Req,
 } from '@nestjs/common';
 import { SubscriptionsService } from './subscriptions.service';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
@@ -17,6 +18,7 @@ import { RolesGuard } from 'src/auth/roles.guard';
 import { Roles } from 'src/auth/roles.decorator';
 import { UserRole } from 'src/users/entities/user.entity';
 import { QuerySubscriptionsDto } from './dto/query-subscriptions.dto';
+import { Request } from 'express';
 
 @Controller('subscriptions')
 export class SubscriptionsController {
@@ -59,7 +61,7 @@ export class SubscriptionsController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.SUPER_ADMIN)
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.subscriptionsService.remove(id);
+  remove(@Param('id') id: string, @Req() request: Request) {
+    return this.subscriptionsService.remove(id, { req: request });
   }
 }

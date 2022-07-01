@@ -14,6 +14,7 @@ import { SubscriptionsService } from 'src/subscriptions/subscriptions.service';
 import valuesSeed from './seed';
 import { QueryDevicesDto } from './dto/query-devices.dto';
 import { FindOptions } from 'src/utils/FindOptions';
+import { SubscriptionDocument } from 'src/subscriptions/entities/subscription.entity';
 
 @Injectable()
 export class DevicesService {
@@ -109,7 +110,37 @@ export class DevicesService {
     return device.populate('subscription');
   }
 
-  remove(id: string) {
-    return `This action removes a #${id} device`;
+  async remove(id: string) {
+    const device = await this._findById(id).populate('subscription');
+    if (!device) {
+      throw new NotFoundException('Device Not Found');
+    }
+
+    const session = await this.connection.startSession();
+    session.startTransaction();
+
+    try {
+      const subscription = device.subscription as SubscriptionDocument;
+
+      const promises = [
+        this.subscriptionService.deleteDevice(
+          subscription._id,
+          device._id,
+          session,
+        ),
+        device.delete({ session }),
+      ];
+
+      await Promise.all(promises);
+
+      await session.commitTransaction();
+      await session.endSession();
+      return device;
+    } catch (error) {
+      this.logger.error(error);
+      await session.abortTransaction();
+      await session.endSession();
+      throw error;
+    }
   }
 }
