@@ -17,7 +17,7 @@ export class AddressDto {
   @IsString()
   state: string;
 
-  @IsNumber()
+  @IsString()
   zip: string;
 }
 

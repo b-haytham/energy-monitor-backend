@@ -21,6 +21,12 @@ export type CompanyInfo = {
   email: string;
   phone: string;
   address: Address;
+  logo: {
+    filename: string | null;
+    path: string | null;
+  };
+  energie_cost: number | null;
+  currency: string | null;
 };
 
 const AddressSchema = new mongoose.Schema({
@@ -36,6 +42,12 @@ const CompanyInfoSchema = new mongoose.Schema({
   email: String,
   phone: String,
   address: AddressSchema,
+  logo: {
+    filename: { type: String, default: null },
+    path: { type: String, default: null },
+  },
+  energie_cost: { type: Number, default: null },
+  currency: { type: String, default: null },
 });
 
 @Schema({ timestamps: true })

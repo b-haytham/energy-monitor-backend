@@ -9,16 +9,23 @@ import {
   Query,
   Put,
   Req,
+  Patch,
 } from '@nestjs/common';
 import { SubscriptionsService } from './subscriptions.service';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
-import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
+import {
+  UpdateSubscriptionDto,
+  UpdateSubscriptionInfoDto,
+} from './dto/update-subscription.dto';
 import { ValidationPipe } from '@nestjs/common';
 import { RolesGuard } from 'src/auth/roles.guard';
 import { Roles } from 'src/auth/roles.decorator';
 import { UserRole } from 'src/users/entities/user.entity';
 import { QuerySubscriptionsDto } from './dto/query-subscriptions.dto';
 import { Request } from 'express';
+import { FileSystemStoredFile, FormDataRequest } from 'nestjs-form-data';
+
+import * as path from 'path';
 
 @Controller('subscriptions')
 export class SubscriptionsController {
@@ -56,6 +63,22 @@ export class SubscriptionsController {
     @Body(ValidationPipe) updateSubscriptionDto: UpdateSubscriptionDto,
   ) {
     return this.subscriptionsService.update(id, updateSubscriptionDto);
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @FormDataRequest({ storage: FileSystemStoredFile })
+  @Patch(':id/info')
+  updateInfo(
+    @Param('id') id: string,
+    @Body(ValidationPipe) updateSubscriptionInfoDto: UpdateSubscriptionInfoDto,
+    @Req() req: Request,
+  ) {
+    return this.subscriptionsService.updateSubscriptionInfo(
+      id,
+      updateSubscriptionInfoDto,
+      { req },
+    );
   }
 
   @UseGuards(RolesGuard)

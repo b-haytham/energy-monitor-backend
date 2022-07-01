@@ -1,13 +1,18 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
-import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
 import {
+  UpdateSubscriptionDto,
+  UpdateSubscriptionInfoDto,
+} from './dto/update-subscription.dto';
+import {
+  CompanyInfo,
   Subscription,
   SubscriptionDocument,
 } from './entities/subscription.entity';
@@ -18,6 +23,7 @@ import { QuerySubscriptionsDto } from './dto/query-subscriptions.dto';
 import { FindOptions, ReqOptions } from 'src/utils/FindOptions';
 import { UserDocument } from 'src/users/entities/user.entity';
 import { DeviceDocument } from 'src/devices/entities/device.entity';
+import path, { parse } from 'path';
 
 @Injectable()
 export class SubscriptionsService {
@@ -50,10 +56,22 @@ export class SubscriptionsService {
         throw new BadRequestException('Admin Already have subscription');
       }
 
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      //@ts-ignore
+      const company_info: CompanyInfo = {
+        ...createSubscriptionDto.company_info,
+        currency: null,
+        energie_cost: null,
+        logo: {
+          filename: null,
+          path: null,
+        },
+      };
+
       // create subscription
       const subscription = new this.SubscriptionModel({
-        ...createSubscriptionDto,
         admin: admin._id,
+        company_info,
       });
 
       await subscription.save({ session });
@@ -124,6 +142,55 @@ export class SubscriptionsService {
     if (!subscription) {
       throw new NotFoundException('Subscription not found');
     }
+    return subscription.populate(['admin', 'users']);
+  }
+
+  async updateSubscriptionInfo(
+    id: string,
+    updateSubscriptionInfoDto: UpdateSubscriptionInfoDto,
+    options: ReqOptions,
+  ) {
+    const loggedInUser = options.req.user;
+
+    if (loggedInUser.role.includes('user') && !loggedInUser.subscription) {
+      throw new ForbiddenException();
+    }
+
+    const subscription = await this._findById(id);
+
+    if (
+      loggedInUser.role.includes('user') &&
+      (loggedInUser.subscription as SubscriptionDocument)._id.toString() !==
+        subscription._id.toString()
+    ) {
+      throw new ForbiddenException();
+    }
+
+    const file_path = updateSubscriptionInfoDto.logo.path;
+
+    const parsed = parse(file_path);
+    console.log(parsed);
+
+    const company_info: CompanyInfo = {
+      name: updateSubscriptionInfoDto.name,
+      email: updateSubscriptionInfoDto.email,
+      phone: updateSubscriptionInfoDto.phone,
+      address: {
+        ...subscription.company_info.address,
+        ...updateSubscriptionInfoDto.address,
+      },
+      logo: {
+        filename: parsed.base,
+        path: `/assets/images/${parsed.base}`,
+      },
+      energie_cost: +updateSubscriptionInfoDto.energie_cost,
+      currency: updateSubscriptionInfoDto.currency,
+    };
+
+    subscription.company_info = company_info;
+
+    await subscription.save();
+
     return subscription.populate(['admin', 'users']);
   }
 

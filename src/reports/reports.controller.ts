@@ -4,8 +4,15 @@ import {
   Get,
   Param,
   Post,
+  Req,
+  Res,
+  UseGuards,
   ValidationPipe,
 } from '@nestjs/common';
+import { Request, Response } from 'express';
+import { Roles } from 'src/auth/roles.decorator';
+import { RolesGuard } from 'src/auth/roles.guard';
+import { UserRole } from 'src/users/entities/user.entity';
 import { TriggerReportDto } from './dto/trigger-report.dto';
 import { ReportsService } from './reports.service';
 
@@ -18,13 +25,49 @@ export class ReportsController {
     return this.reportsService.triggerReport(triggerReportDto);
   }
 
+  @UseGuards(RolesGuard)
+  @Roles(
+    UserRole.SUPER_USER,
+    UserRole.USER,
+    UserRole.SUPER_ADMIN,
+    UserRole.ADMIN,
+  )
+  @Get('file/:name')
+  downloadReport(
+    @Param('name') name: string,
+    @Res({ passthrough: true }) res: Response,
+    @Req() req: Request,
+  ) {
+    // const file = createReadStream(join(__dirname, '..', 'assets', name));
+    // res.set({
+    //   'Content-Type': 'application/pdf',
+    //   'Content-Disposition': `attachment; filename="${name}"`,
+    // });
+    // return new StreamableFile(file);
+    return this.reportsService.downloadReport({ name, res, req });
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles(
+    UserRole.SUPER_USER,
+    UserRole.USER,
+    UserRole.SUPER_ADMIN,
+    UserRole.ADMIN,
+  )
   @Get()
-  findAll() {
+  findAll(@Req() req: Request) {
     return this.reportsService._findAll();
   }
 
+  @UseGuards(RolesGuard)
+  @Roles(
+    UserRole.SUPER_USER,
+    UserRole.USER,
+    UserRole.SUPER_ADMIN,
+    UserRole.ADMIN,
+  )
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id') id: string, @Req() req: Request) {
     return this.reportsService._findById(id);
   }
 }

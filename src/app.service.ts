@@ -11,6 +11,7 @@ export class AppService implements OnModuleInit {
   constructor(private usersService: UsersService) {}
 
   async onModuleInit() {
+    this.logger.debug(process.cwd());
     if (process.env.SUPER_USER_EMAIL && process.env.SUPER_USER_PASSWORD) {
       const users = await this.usersService.findAll({});
       if (!users || users.length === 0) {

@@ -18,6 +18,8 @@ import { JobsModule } from './jobs/jobs.module';
 import { ReportsModule } from './reports/reports.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AlertsModule } from './alerts/alerts.module';
+import { MulterModule } from '@nestjs/platform-express';
+import { NestjsFormDataModule } from 'nestjs-form-data';
 
 @Module({
   imports: [

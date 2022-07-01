@@ -7,12 +7,17 @@ import {
   SubscriptionSchema,
 } from './entities/subscription.entity';
 import { UsersModule } from 'src/users/users.module';
+import { NestjsFormDataModule } from 'nestjs-form-data';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Subscription.name, schema: SubscriptionSchema },
     ]),
+    NestjsFormDataModule.config({
+      fileSystemStoragePath: './src/upload',
+      autoDeleteFile: false,
+    }),
     UsersModule,
   ],
   controllers: [SubscriptionsController],
