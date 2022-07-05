@@ -42,24 +42,24 @@ export class MailProcessor {
     }
   }
 
-  @Process('report-done')
+  @Process('report-notify')
   async processReportDone(job: Job) {
     try {
       await this.mailService.sendReportDone({
         users: job.data.users,
         report: job.data.report,
       });
+
+      this.logger.log('Report Email Sent');
     } catch (error) {
       this.logger.error(error);
     }
   }
 
-  @Process('triggered-alert')
+  @Process('alert-triggered')
   async processTriggeredAlert(job: Job) {
-    this.logger.debug('ALERT>>>>');
-    this.logger.debug(job.data);
     try {
-      await this.mailService.sendTriggeredAlert(job.data);
+      await this.mailService.sendTriggeredAlert(job.data.alert);
     } catch (error) {
       this.logger.error(error);
     }

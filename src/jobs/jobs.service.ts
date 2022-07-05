@@ -19,6 +19,8 @@ import {
   AlertDocument,
 } from 'src/alerts/entities/alert.entity';
 import { CreateTriggeredAlertDto } from 'src/alerts/dto/create-triggered-alert.dto';
+import { UserDocument } from 'src/users/entities/user.entity';
+import { WebsocketGateway } from 'src/websocket/websocket.gateway';
 
 @Injectable()
 export class JobsService {
@@ -28,12 +30,16 @@ export class JobsService {
     private dataService: DataService,
     private reportsService: ReportsService,
     private alertsService: AlertsService,
+    private wsGateway: WebsocketGateway,
     @InjectQueue('mail') private mailQueue: Queue,
   ) {}
 
   async generateReport(subscription: SubscriptionDocument) {
     this.logger.debug(subscription._id);
     const devices = subscription.devices as DeviceDocument[];
+
+    const admin = subscription.admin as UserDocument;
+    const users = subscription.users as UserDocument[];
 
     const promises = devices.map((device) =>
       this.dataService._energieConsumptionAggregation(device._id, '1m', true),
@@ -107,8 +113,16 @@ export class JobsService {
 
     report.file = report_file;
 
-    // this.logger.error(join(__dirname, '..'));
-    return report.save();
+    await report.save();
+
+    await this.mailQueue.add('report-notify', {
+      report,
+      users: [admin.email, ...users.map((u) => u.email)],
+    });
+    this.wsGateway.server
+      .to(['admin', subscription._id])
+      .emit('report-generated', report);
+    return report;
   }
 
   async processNotification(data: {
@@ -116,7 +130,6 @@ export class JobsService {
     notification: DeviceNotificationDto;
   }) {
     this.logger.log('Handling notification');
-    this.logger.log(data.notification);
     const alerts = await this.alertsService
       ._findByDevice(data.notification.d)
       .populate(['user', 'device']);
@@ -134,12 +147,15 @@ export class JobsService {
         // populate user field in triggered alert
         (triggeredAlert.alert as AlertDocument).user = alert.user;
 
-        await this.mailQueue.add('triggered-alert', triggeredAlert);
+        await this.mailQueue.add('alert-triggered', { alert: triggeredAlert });
+        this.wsGateway.server
+          .to(['admin', (alert.user as UserDocument)._id])
+          .emit('triggered-alert', triggeredAlert);
       }
     }
   }
 
-  checkAlertCondition(
+  private checkAlertCondition(
     alert: AlertDocument,
     notification: DeviceNotificationDto,
   ) {
@@ -177,13 +193,13 @@ export class JobsService {
     }
   }
 
-  compileTemplate(path: string, data: any) {
+  private compileTemplate(path: string, data: any) {
     const template = readFileSync(path);
     const compiled = compileTemplate(template.toString('utf8'));
     return compiled(data);
   }
 
-  async createPdf(data: {
+  private async createPdf(data: {
     html: string;
     output_path: string;
     stylessheet_path?: string;

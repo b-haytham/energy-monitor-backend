@@ -29,6 +29,7 @@ export class WebsocketService {
 
     if (user.role.includes('user') && user.subscription) {
       socket.join(user.subscription as string);
+      socket.join(user._id);
     }
 
     socket.emit('authenticated', user);

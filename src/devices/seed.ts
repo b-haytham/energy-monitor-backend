@@ -3,6 +3,16 @@ import { DeviceType, Value } from './entities/device.entity';
 export const makeTri = (): Value[] => {
   return [
     {
+      name: 'Status',
+      description: 'Device Status',
+      accessor: 's',
+      unit: '',
+      latest_value: {
+        value: null,
+        timestamp: null,
+      },
+    },
+    {
       name: 'Tension 1',
       description: 'Tension 1',
       accessor: 'u1',
@@ -87,6 +97,16 @@ export const makeTri = (): Value[] => {
 
 export const makeMono = (): Value[] => {
   return [
+    {
+      name: 'Status',
+      description: 'Device Status',
+      accessor: 's',
+      unit: '',
+      latest_value: {
+        value: null,
+        timestamp: null,
+      },
+    },
     {
       name: 'Tension',
       description: 'Tension',

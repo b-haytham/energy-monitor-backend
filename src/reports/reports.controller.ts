@@ -38,12 +38,6 @@ export class ReportsController {
     @Res({ passthrough: true }) res: Response,
     @Req() req: Request,
   ) {
-    // const file = createReadStream(join(__dirname, '..', 'assets', name));
-    // res.set({
-    //   'Content-Type': 'application/pdf',
-    //   'Content-Disposition': `attachment; filename="${name}"`,
-    // });
-    // return new StreamableFile(file);
     return this.reportsService.downloadReport({ name, res, req });
   }
 
@@ -56,7 +50,7 @@ export class ReportsController {
   )
   @Get()
   findAll(@Req() req: Request) {
-    return this.reportsService._findAll();
+    return this.reportsService.findAll({ req });
   }
 
   @UseGuards(RolesGuard)
@@ -68,6 +62,6 @@ export class ReportsController {
   )
   @Get(':id')
   findOne(@Param('id') id: string, @Req() req: Request) {
-    return this.reportsService._findById(id);
+    return this.reportsService.findById(id, { req });
   }
 }

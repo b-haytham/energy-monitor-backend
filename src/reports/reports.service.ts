@@ -87,12 +87,17 @@ export class ReportsService {
       throw new ForbiddenException();
     }
 
-    const file = createReadStream(join(__dirname, '..', 'assets', name));
-    res.set({
-      'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="${name}"`,
-    });
+    try {
+      const file = createReadStream(join(__dirname, '..', 'assets', name));
+      res.set({
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${name}"`,
+      });
     return new StreamableFile(file);
+    } catch (error) {
+      this.logger.error(error);      
+      throw error;
+    }
   }
 
   async findAll(options: ReqOptions) {

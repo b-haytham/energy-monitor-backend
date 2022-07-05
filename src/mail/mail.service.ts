@@ -2,6 +2,7 @@ import { MailerService } from '@nestjs-modules/mailer';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { join } from 'path';
+import { AlertDocument } from 'src/alerts/entities/alert.entity';
 import { TriggeredAlertsDocument } from 'src/alerts/entities/triggered-alerts.entity';
 import { ReportDocument } from 'src/reports/entities/report.entity';
 import { UserDocument } from 'src/users/entities/user.entity';
@@ -63,11 +64,10 @@ export class MailService {
   }
 
   async sendTriggeredAlert(triggered_alert: TriggeredAlertsDocument) {
+    const user = (triggered_alert.alert as AlertDocument).user as UserDocument;
     return this.mailerService.sendMail({
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      //@ts-ignore
-      to: (triggered_alert.alert.user as UserDocument).email,
-      subject: 'Alert',
+      to: user.email,
+      subject: 'Triggered Alert',
       template: './triggered-alert',
       context: {
         triggered_alert,

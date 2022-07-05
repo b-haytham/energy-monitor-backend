@@ -4,11 +4,13 @@ import { AppModule } from './app.module';
 
 import * as cookieSession from 'cookie-session';
 import { MqttOptions, Transport } from '@nestjs/microservices';
+import { HttpExceptionFilter } from './global-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   app.setGlobalPrefix('api');
+  app.useGlobalFilters(new HttpExceptionFilter());
 
   app.set('trust proxy', true);
 

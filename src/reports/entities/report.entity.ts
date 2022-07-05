@@ -39,11 +39,14 @@ export class Report {
   @Prop()
   cost: number;
 
-  @Prop(raw({
-    name: String,
-    path: String,
-    url: String
-  }))
+  @Prop(
+    raw({
+      name: String,
+      path: String,
+      url: String,
+      // eslint-disable-next-line prettier/prettier
+    })
+  )
   file: ReportFile;
 
   @Prop()
