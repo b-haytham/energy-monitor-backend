@@ -192,7 +192,7 @@ export class AuthService {
     );
     if (!passwordMatch) {
       this.logger.error("[Change Passworrd]: password don't match");
-      return {};
+      throw new BadRequestException('Wrong credentials!');
     }
 
     const hash = await bcrypt.hash(changePasswordDto.new, 10);
@@ -200,7 +200,7 @@ export class AuthService {
 
     await user.save();
 
-    return {};
+    return user;
   }
 
   async createDeviceToken(data: { device: string }) {
