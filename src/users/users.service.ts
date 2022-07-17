@@ -1,15 +1,13 @@
 import {
   BadRequestException,
   ForbiddenException,
-  forwardRef,
-  Inject,
   Injectable,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateUserDto, UpdateUserInfoDto } from './dto/update-user.dto';
 import { User, UserDocument, UserRole } from './entities/user.entity';
 
 import * as bcrypt from 'bcrypt';
@@ -119,10 +117,58 @@ export class UsersService {
     );
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto) {
-    return this.UserModel.findByIdAndUpdate(id, updateUserDto, {
-      new: true,
-    }).populate('subscription');
+  async updateInfo(
+    id: string,
+    updateUserInfoDto: UpdateUserInfoDto,
+    options: ReqOptions,
+  ) {
+    const loggedInUser = options.req.user;
+    if (loggedInUser._id.toString() !== id) {
+      throw new ForbiddenException();
+    }
+
+    const user = await this._findById(id);
+    if (!user) {
+      this.logger.log('[Update]: User not found');
+      throw new NotFoundException('User not Found');
+    }
+
+    user.first_name = updateUserInfoDto.first_name;
+    user.last_name = updateUserInfoDto.last_name;
+
+    await user.save();
+
+    return user.populate('subscription');
+  }
+
+  async update(id: string, updateUserDto: UpdateUserDto, options: ReqOptions) {
+    const loggedInUser = options.req.user;
+
+    const user = await this._findById(id);
+    if (!user) {
+      this.logger.log('[Update]: User not found');
+      throw new NotFoundException('User not Found');
+    }
+
+    // if (
+    //   loggedInUser.role == UserRole.ADMIN &&
+    //   user.role.includes('admin') &&
+    //   loggedInUser._id.toString() !== user._id.toString()
+    // ) {
+    //   throw new ForbiddenException();
+    // }
+
+    if (!this.canUpdateUser(loggedInUser, user)) {
+      throw new ForbiddenException();
+    }
+
+    delete updateUserDto.password;
+
+    user.set(updateUserDto);
+
+    await user.save();
+
+    return user.populate('subscription');
   }
 
   async remove(id: string, options: ReqOptions) {
@@ -191,5 +237,40 @@ export class UsersService {
       await session.endSession();
       throw error;
     }
+  }
+
+  private canUpdateUser(
+    loggedInUser: UserDocument,
+    user: UserDocument,
+  ): boolean {
+    const loggedInUserSubscriptionId = (
+      loggedInUser.subscription as SubscriptionDocument
+    )._id;
+    const userToUpdateSubscriptionId = (
+      user.subscription as SubscriptionDocument
+    )._id;
+    this.logger.debug(
+      `loggedInUserSubscriptionId : ${loggedInUserSubscriptionId}`,
+    );
+    this.logger.debug(
+      `userToUpdateSubscriptionId : ${userToUpdateSubscriptionId}`,
+    );
+
+    if (
+      loggedInUser.role == UserRole.SUPER_USER &&
+      loggedInUserSubscriptionId.toString() !==
+        userToUpdateSubscriptionId.toString()
+    ) {
+      return false;
+    }
+
+    if (
+      loggedInUser.role == UserRole.ADMIN &&
+      user.role == UserRole.SUPER_ADMIN
+    ) {
+      return false;
+    }
+
+    return true;
   }
 }

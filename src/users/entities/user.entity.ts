@@ -54,6 +54,9 @@ export class User {
 
   @Prop({ default: false })
   logged_in: boolean;
+
+  @Prop({ default: false })
+  blocked: boolean;
 }
 
 const UserSchema = SchemaFactory.createForClass(User);

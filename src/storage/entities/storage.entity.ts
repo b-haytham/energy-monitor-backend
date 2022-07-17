@@ -35,7 +35,7 @@ export class StorageSource {
 
 @Schema({ timeseries: { timeField: 't', metaField: 's' } })
 export class Storage {
-  @Prop({ type: StorageSource })
+  @Prop({ type: StorageSource, index: true })
   s: StorageSource;
 
   @Prop()
