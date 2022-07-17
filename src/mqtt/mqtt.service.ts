@@ -30,13 +30,14 @@ export class MqttService {
   async handleDeviceNotification(data: DeviceNotificationDto) {
     // performance.mark('start');
     const device = await this.storageService.store(data);
+    this.logger.log(`device >>> ${device}`);
     if (device) {
       this.websocketGateway.server
-        .to(['admin', device.subscription as string])
+        .to(['admin', device.subscription.toString() as string])
         .emit(`notification/${device._id}`, data);
 
       this.websocketGateway.server
-        .to(['admin', device.subscription as string])
+        .to(['admin', device.subscription.toString() as string])
         .emit(`device/notification`, data);
     }
 

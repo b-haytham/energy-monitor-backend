@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Socket } from 'socket.io';
+import { SubscriptionDocument } from 'src/subscriptions/entities/subscription.entity';
 import { UsersService } from 'src/users/users.service';
 import { AuthenticateDto } from './dto/authenticate.dto';
 
@@ -25,10 +26,16 @@ export class WebsocketService {
 
     if (user.role.includes('admin')) {
       socket.join('admin');
+      socket.join(user._id);
     }
 
     if (user.role.includes('user') && user.subscription) {
-      socket.join(user.subscription as string);
+      this.logger.log(
+        `Joining User to subscription channel >> ${
+          (user.subscription as SubscriptionDocument)._id
+        }`,
+      );
+      socket.join((user.subscription as SubscriptionDocument)._id.toString());
       socket.join(user._id);
     }
 
