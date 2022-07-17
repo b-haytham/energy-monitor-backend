@@ -123,4 +123,140 @@ export class AggregationUtilitiesService {
       },
     };
   }
+
+  private getMatchDate(time: string) {
+    switch (time) {
+      case '1d':
+        return dayjs().subtract(1, 'day').startOf('day').toDate();
+      case '1m':
+        return dayjs().subtract(1, 'month').startOf('month').toDate();
+      case '1y':
+        return dayjs().subtract(1, 'year').startOf('year').toDate();
+      default:
+        return dayjs().subtract(1, 'month').startOf('month').toDate();
+    }
+  }
+
+  private getDateStringFormat(time: string) {
+    switch (time) {
+      case '1d':
+        return "%Y-%m-%d '%H";
+      case '1m':
+        return '%Y-%m-%d';
+      case '1y':
+        return '%Y-%m';
+      default:
+        return '%Y-%m-%d';
+    }
+  }
+
+  private getWidowRangeUnit(time: string) {
+    switch (time) {
+      case '1d':
+        return 'hour';
+      case '1m':
+        return 'day';
+      case '1y':
+        return 'month';
+      default:
+        return 'day';
+    }
+  }
+
+  getAggregationPipeline(device: string, value: string, time: string) {
+    const matchStage = {
+      $match: {
+        's.d': device,
+        's.v': value,
+        t: { $gte: this.getMatchDate(time) },
+      },
+    };
+
+    const setWindowFieldsStage = {
+      $setWindowFields: {
+        partitionBy: {
+          $dateToString: {
+            date: '$t',
+            format: this.getDateStringFormat(time),
+            timezone: 'Africa/Tunis',
+          },
+        },
+        sortBy: { t: 1 },
+        output: {
+          consumedKilowattHours: {
+            $integral: {
+              input: '$v',
+              unit: 'hour',
+            },
+            window: {
+              range: [-1, 'current'],
+              unit: this.getWidowRangeUnit(time),
+            },
+          },
+        },
+      },
+    };
+
+    const groupStage = {
+      $group: {
+        _id: {
+          $dateToString: {
+            date: '$t',
+            format: this.getDateStringFormat(time),
+            timezone: 'Africa/Tunis',
+          },
+        },
+        consumed: { $last: '$consumedKilowattHours' },
+      },
+    };
+
+    const sortStage = {
+      $sort: {
+        _id: 1,
+      },
+    };
+
+    return [matchStage, setWindowFieldsStage, groupStage, sortStage];
+  }
 }
+
+/*
+$match
+{
+  "s.v": "p",
+  "t":{ $gte:  ISODate('2022-01-01T00:00:00') }
+}
+
+$setWindowFields
+{
+  partitionBy: {
+    $dateToString: { date:"$t", format: "%Y-%m", timezone: "Africa/Tunis" }
+  },
+  sortBy: { t: 1 },    
+  output: {
+    consumedKilowattHours: {
+        "$integral": {
+          "input": "$v",
+          "unit": "hour",
+        },
+        "window": {
+          "range": [-1, "current"],
+          "unit": "day",
+        },
+      },
+    },
+}
+
+$group
+{
+  _id: {
+    $dateToString: { date:"$t", format: "%Y-%m-%d" timezone: "Africa/Tunis" }
+  },
+  c: { $last: "$consumedKilowattHours" }
+}
+
+$sort 
+{
+  _id: 1
+}
+*/

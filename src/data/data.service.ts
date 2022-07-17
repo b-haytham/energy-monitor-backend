@@ -15,7 +15,7 @@ import * as dayjs from 'dayjs';
 import { DevicesService } from 'src/devices/devices.service';
 import { FindOptions } from 'src/utils/FindOptions';
 import { DeviceDocument } from 'src/devices/entities/device.entity';
-import { type } from 'os';
+import { SubscriptionDocument } from 'src/subscriptions/entities/subscription.entity';
 
 @Injectable()
 export class DataService {
@@ -45,8 +45,15 @@ export class DataService {
       findOptions.req.user &&
       findOptions.req.user.role.includes('user') &&
       findOptions.req.user.subscription &&
-      findOptions.req.user.subscription.toString() !== query.s
+      (
+        findOptions.req.user.subscription as SubscriptionDocument
+      )._id.toString() !== query.s
     ) {
+      this.logger.error(
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        //@ts-ignore
+        `${findOptions.req.user.subscription._id} == ${query.s}`,
+      );
       this.logger.error(`user unauthorized`);
       throw new ForbiddenException();
     }
@@ -61,26 +68,6 @@ export class DataService {
     this.logger.debug(options.req.user);
 
     this.checkIsAuthorized(device, query, options);
-
-    // const match = this.aggregationUtils.getMatchStage(query.t, {
-    //   's.d': device._id,
-    //   's.v': 'e',
-    // });
-    // const group = this.aggregationUtils.getGroupStage(query.t, {
-    //   max: { $last: '$v' },
-    // });
-    //
-    // const windowStage = this.aggregationUtils.getWindowingStage();
-    //
-    // const addFields = this.aggregationUtils.getAddFieldsStage();
-    //
-    // const pipeline = [match, group, windowStage, addFields];
-    //
-    // const StorageModel = this.storageService.getStorageModel();
-    //
-    // // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // //@ts-ignore
-    // return StorageModel.aggregate(pipeline);
     return this._energieConsumptionAggregation(device._id, query.t);
   }
 
@@ -166,6 +153,12 @@ export class DataService {
 
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     //@ts-ignore
-    return StorageModel.aggregate(pipeline);
+    // return StorageModel.aggregate(pipeline);
+    return StorageModel.aggregate(
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      //@ts-ignore
+      this.aggregationUtils.getAggregationPipeline(deviceId, 'p', time),
+      { allowDiskUse: true },
+    );
   }
 }
