@@ -147,9 +147,13 @@ export class JobsService {
         // populate user field in triggered alert
         (triggeredAlert.alert as AlertDocument).user = alert.user;
 
+        this.logger.debug(
+          `userId >> ${(alert.user as UserDocument)._id.toString()}`,
+        );
+
         await this.mailQueue.add('alert-triggered', { alert: triggeredAlert });
         this.wsGateway.server
-          .to(['admin', (alert.user as UserDocument)._id])
+          .to(['admin', (alert.user as UserDocument)._id.toString()])
           .emit('triggered-alert', triggeredAlert);
       }
     }

@@ -36,7 +36,7 @@ export class WebsocketService {
         }`,
       );
       socket.join((user.subscription as SubscriptionDocument)._id.toString());
-      socket.join(user._id);
+      socket.join(user._id.toString());
     }
 
     socket.emit('authenticated', user);

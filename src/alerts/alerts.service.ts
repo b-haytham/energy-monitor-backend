@@ -140,7 +140,8 @@ export class AlertsService {
       throw new NotFoundException('Alert Not Found');
     }
     alert.set(updateAlertDto);
-    return alert.save();
+    await alert.save();
+    return alert.populate(['user', 'device']);
   }
 
   async remove(id: string, options: ReqOptions) {
