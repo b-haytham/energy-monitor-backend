@@ -56,6 +56,18 @@ export class AlertsController {
     UserRole.ADMIN,
     UserRole.SUPER_ADMIN,
   )
+  @Get(':id/triggered')
+  findAllTriggeredAlerts(@Param('id') id: string, @Req() request: Request) {
+    return this.alertsService.findAllTrigggeredAlerts(id, { req: request });
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles(
+    UserRole.USER,
+    UserRole.SUPER_USER,
+    UserRole.ADMIN,
+    UserRole.SUPER_ADMIN,
+  )
   @Get(':id')
   findOne(@Param('id') id: string, @Req() request: Request) {
     return this.alertsService.findById(id, { req: request });

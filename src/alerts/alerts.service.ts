@@ -20,6 +20,7 @@ import {
 } from './entities/triggered-alerts.entity';
 import { CreateTriggeredAlertDto } from './dto/create-triggered-alert.dto';
 import { validate } from 'class-validator';
+import { UserDocument } from 'src/users/entities/user.entity';
 
 @Injectable()
 export class AlertsService {
@@ -84,6 +85,29 @@ export class AlertsService {
     );
     await triggeredAlert.save();
     return triggeredAlert.populate(['alert']);
+  }
+
+  async findAllTrigggeredAlerts(id: string, options: ReqOptions) {
+    const alert = await this._findById(id).populate(['user', 'device']);
+
+    if (!alert) {
+      throw new NotFoundException('Alert Not found');
+    }
+
+    const loggedInUser = options.req.user;
+    if (
+      loggedInUser.role.includes('user') &&
+      (alert.user as UserDocument)._id.toString() !==
+        loggedInUser._id.toString()
+    ) {
+      throw new ForbiddenException();
+    }
+
+    const triggeredAlerts = await this.TriggeredAlertModel.find({
+      alert: alert._id,
+    }).populate(['alert']).sort({ createdAt: -1 });
+
+    return { alert, triggeredAlerts };
   }
 
   findAll(options?: FindOptions) {
