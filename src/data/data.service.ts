@@ -84,7 +84,7 @@ export class DataService {
     return StorageModel.find({
       's.d': query.d,
       's.v': 'p',
-      t: { $gte: dayjs().subtract(2, 'day').toDate() },
+      t: { $gte: dayjs().subtract(1, 'minute').toDate() },
     }).sort({ t: 1 });
   }
 
@@ -120,7 +120,9 @@ export class DataService {
 
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     //@ts-ignore
-    return StorageModel.aggregate(pipeline);
+    // return StorageModel.aggregate(pipeline);
+
+    return this._energieConsumptionAggregation(device._id, query.t, true);
   }
 
   _energieConsumptionAggregation(
@@ -157,7 +159,8 @@ export class DataService {
     return StorageModel.aggregate(
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       //@ts-ignore
-      this.aggregationUtils.getAggregationPipeline(deviceId, 'p', time),
+      // eslint-disable-next-line prettier/prettier
+      this.aggregationUtils.getAggregationPipeline(deviceId, 'p', time, isExactTime),
       { allowDiskUse: true },
     );
   }

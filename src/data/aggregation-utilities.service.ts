@@ -137,33 +137,38 @@ export class AggregationUtilitiesService {
     }
   }
 
-  private getDateStringFormat(time: string) {
+  private getDateStringFormat(time: string, isOverview?: boolean) {
     switch (time) {
       case '1d':
-        return "%Y-%m-%d '%H";
+        return isOverview ? '%Y-%m-%d' : "%Y-%m-%d '%H";
       case '1m':
-        return '%Y-%m-%d';
+        return isOverview ? '%Y-%m' : '%Y-%m-%d';
       case '1y':
+        return isOverview ? '%Y' : '%Y-%m';
+      default:
         return '%Y-%m';
-      default:
-        return '%Y-%m-%d';
     }
   }
 
-  private getWidowRangeUnit(time: string) {
+  private getWidowRangeUnit(time: string, isOverview?: boolean) {
     switch (time) {
       case '1d':
-        return 'hour';
+        return isOverview ? 'day' : 'hour';
       case '1m':
-        return 'day';
+        return isOverview ? 'month' : 'day';
       case '1y':
-        return 'month';
+        return isOverview ? 'year' : 'month';
       default:
-        return 'day';
+        return isOverview ? 'month' : 'day';
     }
   }
 
-  getAggregationPipeline(device: string, value: string, time: string) {
+  getAggregationPipeline(
+    device: string,
+    value: string,
+    time: string,
+    isOverview?: boolean,
+  ) {
     const matchStage = {
       $match: {
         's.d': device,
@@ -177,7 +182,7 @@ export class AggregationUtilitiesService {
         partitionBy: {
           $dateToString: {
             date: '$t',
-            format: this.getDateStringFormat(time),
+            format: this.getDateStringFormat(time, isOverview),
             timezone: 'Africa/Tunis',
           },
         },
@@ -190,7 +195,7 @@ export class AggregationUtilitiesService {
             },
             window: {
               range: [-1, 'current'],
-              unit: this.getWidowRangeUnit(time),
+              unit: this.getWidowRangeUnit(time, isOverview),
             },
           },
         },
@@ -202,7 +207,7 @@ export class AggregationUtilitiesService {
         _id: {
           $dateToString: {
             date: '$t',
-            format: this.getDateStringFormat(time),
+            format: this.getDateStringFormat(time, isOverview),
             timezone: 'Africa/Tunis',
           },
         },
