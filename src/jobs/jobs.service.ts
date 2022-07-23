@@ -120,8 +120,8 @@ export class JobsService {
       users: [admin.email, ...users.map((u) => u.email)],
     });
     this.wsGateway.server
-      .to(['admin', subscription._id])
-      .emit('report-generated', report);
+      .to(['admin', subscription._id.toString()])
+      .emit('report/generated', report);
     return report;
   }
 
@@ -154,7 +154,7 @@ export class JobsService {
         await this.mailQueue.add('alert-triggered', { alert: triggeredAlert });
         this.wsGateway.server
           .to(['admin', (alert.user as UserDocument)._id.toString()])
-          .emit('triggered-alert', triggeredAlert);
+          .emit('alert/triggered', triggeredAlert);
       }
     }
   }
