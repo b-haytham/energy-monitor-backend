@@ -23,12 +23,25 @@ export class WebsocketGateway {
 
   @UsePipes(new WsValidationPipe())
   @SubscribeMessage('authenticate')
-  async create(
+  async authenticate(
     @MessageBody() authenticateDto: AuthenticateDto,
     @ConnectedSocket() socket: Socket,
   ) {
     try {
       await this.websocketService.authenticate(socket, authenticateDto);
+    } catch (error) {
+      throw new WsException(error.message);
+    }
+  }
+
+  @UsePipes(new WsValidationPipe())
+  @SubscribeMessage('logout')
+  async logout(
+    @MessageBody() authenticateDto: AuthenticateDto,
+    @ConnectedSocket() socket: Socket,
+  ) {
+    try {
+      await this.websocketService.logout(socket, authenticateDto);
     } catch (error) {
       throw new WsException(error.message);
     }
