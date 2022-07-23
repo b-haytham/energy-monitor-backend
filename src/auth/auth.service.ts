@@ -219,18 +219,25 @@ export class AuthService {
 
   async verifyDeviceToken(data: { access_token: string }) {
     try {
-      const payload = this.jwtService.decode(data.access_token) as {
-        sub: string;
-        subscription: string;
-      };
+      let payload: { sub: string; subscription: string };
+
+      try {
+        payload = this.jwtService.verify(data.access_token) as {
+          sub: string;
+          subscription: string;
+        };
+      } catch (error) {
+        this.logger.error(`Error decode jwt: ${error.message}`);
+        throw error;
+      }
       const device = await this.devicesService._findById(payload.sub);
       if (!device) {
         throw new BadRequestException('Device Not Found');
       }
       return device.populate('subscription');
     } catch (error) {
-      this.logger.error('Verify Device Token Error: ${error.message}');
-      throw error;
+      this.logger.error(`Verify Device Token Error: ${error.message}`);
+      throw new UnauthorizedException(error.message);
     }
   }
 }

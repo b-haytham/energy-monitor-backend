@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
   Post,
   Req,
   UseGuards,
@@ -101,6 +102,7 @@ export class AuthController {
   }
 
   @Post('devices/token-verify')
+  @HttpCode(200)
   async verifyDeviceToken(@Body() data: { access_token: string }) {
     return await this.authService.verifyDeviceToken(data);
   }
