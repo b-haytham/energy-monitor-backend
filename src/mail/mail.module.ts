@@ -25,7 +25,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
           from: config.get('SMTP_FROM_ADDRESS'),
         },
         template: {
-          dir: path.join(__dirname, 'templates'),
+          dir: path.join(__dirname, '..', 'assets', 'templates', 'mail'),
           adapter: new HandlebarsAdapter(),
           options: {
             strict: true,
