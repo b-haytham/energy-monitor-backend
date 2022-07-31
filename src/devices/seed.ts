@@ -13,8 +13,18 @@ export const makeTri = (): Value[] => {
       },
     },
     {
-      name: 'Tension 1',
-      description: 'Tension 1',
+      name: 'Power',
+      description: 'Power',
+      accessor: 'p',
+      unit: 'kw',
+      latest_value: {
+        value: null,
+        timestamp: null,
+      },
+    },
+    {
+      name: 'Voltage 1',
+      description: 'Voltage 1',
       accessor: 'u1',
       unit: 'V',
       latest_value: {
@@ -23,8 +33,8 @@ export const makeTri = (): Value[] => {
       },
     },
     {
-      name: 'Tension 2',
-      description: 'Tension 2',
+      name: 'Voltage 2',
+      description: 'Voltage 2',
       accessor: 'u2',
       unit: 'V',
       latest_value: {
@@ -33,8 +43,8 @@ export const makeTri = (): Value[] => {
       },
     },
     {
-      name: 'Tension 3',
-      description: 'Tension 3',
+      name: 'Voltage 3',
+      description: 'Voltage 3',
       accessor: 'u3',
       unit: 'V',
       latest_value: {
@@ -73,16 +83,6 @@ export const makeTri = (): Value[] => {
       },
     },
     {
-      name: 'Power',
-      description: 'Power',
-      accessor: 'p',
-      unit: 'W',
-      latest_value: {
-        value: null,
-        timestamp: null,
-      },
-    },
-    {
       name: 'Energie',
       description: 'Energie',
       accessor: 'e',
@@ -108,8 +108,18 @@ export const makeMono = (): Value[] => {
       },
     },
     {
-      name: 'Tension',
-      description: 'Tension',
+      name: 'Power',
+      description: 'Power',
+      accessor: 'p',
+      unit: 'kw',
+      latest_value: {
+        value: null,
+        timestamp: null,
+      },
+    },
+    {
+      name: 'Voltage',
+      description: 'Voltage',
       accessor: 'u',
       unit: 'V',
       latest_value: {
@@ -122,16 +132,6 @@ export const makeMono = (): Value[] => {
       description: 'Current',
       accessor: 'i',
       unit: 'A',
-      latest_value: {
-        value: null,
-        timestamp: null,
-      },
-    },
-    {
-      name: 'Power',
-      description: 'Power',
-      accessor: 'p',
-      unit: 'W',
       latest_value: {
         value: null,
         timestamp: null,
