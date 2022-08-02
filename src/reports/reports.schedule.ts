@@ -15,15 +15,17 @@ export class ReportsScheduleService {
 
   @Cron('0 0 1 * *', {
     name: 'reports-task',
-    timeZone: 'Africa/Tunis'
+    timeZone: 'Africa/Tunis',
   })
   async generateReports() {
     const subscriptions = await this.subscriptionsService
       ._findAll()
       .populate(['admin', 'users', 'devices']);
-    
+
     if (subscriptions.length > 0) {
-      this.logger.log(`Generating reports for ${subscriptions.length} subscriptions`)
+      this.logger.log(
+        `Generating reports for ${subscriptions.length} subscriptions`,
+      );
       await this.reportsQueue.addBulk(
         subscriptions.map((sub) => ({ name: 'report-generate', data: sub })),
       );

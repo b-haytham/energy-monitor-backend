@@ -59,7 +59,34 @@ export class MailProcessor {
   @Process('alert-triggered')
   async processTriggeredAlert(job: Job) {
     try {
-      await this.mailService.sendTriggeredAlert(job.data.alert);
+      await this.mailService.sendTriggeredAlert(job.data);
+    } catch (error) {
+      this.logger.error(error);
+    }
+  }
+
+  @Process('device-connected')
+  async processDeviceConnected(job: Job) {
+    try {
+      await this.mailService.sendDeviceConnected(job.data);
+    } catch (error) {
+      this.logger.error(error);
+    }
+  }
+
+  @Process('device-connection-lost')
+  async processDeviceConnectionLost(job: Job) {
+    try {
+      await this.mailService.sendDeviceConnectionLost(job.data);
+    } catch (error) {
+      this.logger.error(error);
+    }
+  }
+
+  @Process('device-disconnected')
+  async processDeviceDisconnected(job: Job) {
+    try {
+      await this.mailService.sendDeviceDisconnected(job.data);
     } catch (error) {
       this.logger.error(error);
     }

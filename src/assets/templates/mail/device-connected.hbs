@@ -3,8 +3,12 @@
   <p style="font-size: 20px; font-weight: bolder; margin-left: 10px">Energy Monitor</p>
 </div>
 
-<h2 style="margin-top: 20px;">New Report {{ report.date }}</h2>
 
-<p>Checkout attachement</p>
+<h2 style="margin-top: 20px;">Device Connected</h2>
 
+<div style="margin: 50px 0;">
+  <p>
+    Hi {{user.first_name}} {{user.last_name}}, Device <a href="{{base_url}}/dash/devices/{{device._id}}"> {{device.name}} </a> just connected. follow the link to device page
+  </p>
+</div>
 <p>If you did not request this email you can safely ignore it.</p>

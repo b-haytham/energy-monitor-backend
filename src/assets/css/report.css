@@ -1,6 +1,6 @@
 .head {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   min-height: 20%; 
 }
 
@@ -19,13 +19,16 @@
 
 .table-container {
   margin-top: 50px;
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: 20px;;
 }
 
 table {
   table-layout: fixed;
   width: 100%;
   border-collapse: collapse;
-  border: 3px solid black;
+  /* border: 3px solid black; */
 }
 
 .last {
@@ -55,4 +58,19 @@ thead th:nth-child(4) {
 
 th, td {
   padding: 20px;
+}
+
+.table {
+  /* width: 1000px; */
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.table th, .table td {
+  padding: 15px;
+  border: 1px solid #ccc;
+}
+
+.table th {
+  background-color: #dedede;
 }

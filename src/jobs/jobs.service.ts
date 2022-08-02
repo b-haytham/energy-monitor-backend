@@ -30,12 +30,23 @@ export class JobsService {
     private dataService: DataService,
     private reportsService: ReportsService,
     private alertsService: AlertsService,
+    // private subscriptionsSevice: SubscriptionsService,
     private wsGateway: WebsocketGateway,
     @InjectQueue('mail') private mailQueue: Queue,
   ) {}
 
+  // todo: extract logic
+  // use db transction
+  // add documentation
   async generateReport(subscription: SubscriptionDocument) {
-    this.logger.debug(subscription._id);
+    this.logger.debug(`[Generate Report]: subscription: ${subscription._id}`);
+    this.logger.debug(
+      `[Generate Report]: subscription info: ${JSON.stringify(
+        // eslint-disable-next-line prettier/prettier
+        subscription.company_info
+      )}`,
+    );
+
     const devices = subscription.devices as DeviceDocument[];
 
     const admin = subscription.admin as UserDocument;
@@ -57,20 +68,29 @@ export class JobsService {
         total += data.consumed;
       }
 
+      const consumed = data ? data.consumed : 0;
       return {
         device: device._id,
         device_name: device.name,
-        consumed: data ? data.consumed : 0,
-        cost: 0,
+        consumed: +consumed.toFixed(2),
+        cost: subscription.company_info.energie_cost
+          ? subscription.company_info.energie_cost * +consumed.toFixed(2)
+          : 0,
       };
     });
 
     const report = await this.reportsService.create({
       subscription: subscription._id,
       items,
-      total,
-      cost: 0,
-      pdf_path: 'no-path',
+      total: +total.toFixed(2),
+      cost: subscription.company_info.energie_cost
+        ? subscription.company_info.energie_cost * +total.toFixed(2)
+        : 0,
+      file: {
+        name: null,
+        path: null,
+        url: null,
+      },
       date: new Date(Date.now()),
     });
 
@@ -82,10 +102,28 @@ export class JobsService {
       'report.hbs',
     );
 
+    const html_total = report.total.toFixed(2) + ' (kw/h)';
+    const html_cost = `${report.cost.toFixed(2)} ${
+      subscription.company_info.currency
+        ? subscription.company_info.currency
+        : ''
+    }`;
+
+    const html_items = report.items.map((it) => ({
+      ...it,
+      cost: `${it.cost.toFixed(2)} ${
+        subscription.company_info.currency
+          ? subscription.company_info.currency
+          : ''
+      }`,
+      consumed: it.consumed + ' (kw/h)',
+    }));
+
     const html = this.compileTemplate(template_path, {
-      total: report.total.toFixed(2),
-      cost: report.cost.toFixed(2),
-      items: report.items,
+      total: html_total,
+      cost: html_cost,
+      items: html_items,
+      date: report.date.getFullYear() + '-' + report.date.getMonth(),
       subscription: subscription.company_info,
     });
 
@@ -103,6 +141,7 @@ export class JobsService {
       await this.createPdf({ html, output_path: pdf_path, stylessheet_path });
     } catch (error) {
       this.logger.error(error);
+      throw error;
     }
 
     const report_file: ReportFile = {
@@ -117,11 +156,12 @@ export class JobsService {
 
     await this.mailQueue.add('report-notify', {
       report,
-      users: [admin.email, ...users.map((u) => u.email)],
+      users: [admin, ...users],
     });
     this.wsGateway.server
       .to(['admin', subscription._id.toString()])
       .emit('report/generated', report);
+
     return report;
   }
 
@@ -146,12 +186,18 @@ export class JobsService {
 
         // populate user field in triggered alert
         (triggeredAlert.alert as AlertDocument).user = alert.user;
-
+        alert.trigger_count += 1;
+        await alert.save();
         this.logger.debug(
           `userId >> ${(alert.user as UserDocument)._id.toString()}`,
         );
 
-        await this.mailQueue.add('alert-triggered', { alert: triggeredAlert });
+        await this.mailQueue.add('alert-triggered', {
+          triggered_alert: triggeredAlert,
+          user: alert.user,
+          alert: alert,
+        });
+
         this.wsGateway.server
           .to(['admin', (alert.user as UserDocument)._id.toString()])
           .emit('alert/triggered', triggeredAlert);

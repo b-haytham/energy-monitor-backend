@@ -4,6 +4,7 @@ import {
   IsDate,
   IsMongoId,
   IsNumber,
+  IsObject,
   IsPositive,
   IsString,
   ValidateNested,
@@ -49,8 +50,12 @@ export class CreateReportDto {
   @IsPositive()
   cost: number;
 
-  @IsString()
-  pdf_path: string;
+  @IsObject()
+  file: {
+    name: string | null;
+    path: string | null;
+    url: string | null;
+  };
 
   @IsDate()
   date: Date;
@@ -60,7 +65,7 @@ export class CreateReportDto {
     this.date = report.date;
     this.total = report.total;
     this.subscription = report.subscription;
-    this.pdf_path = report.pdf_path;
+    this.file = report.file;
     this.items = report.items.map((it) => new ReportItem(it));
   }
 }

@@ -3,6 +3,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Queue } from 'bull';
 import { DevicesService } from 'src/devices/devices.service';
 import { StorageService } from 'src/storage/storage.service';
+import { SubscriptionsService } from 'src/subscriptions/subscriptions.service';
+import { UserDocument } from 'src/users/entities/user.entity';
 import { WebsocketGateway } from 'src/websocket/websocket.gateway';
 import { DeviceNotificationDto } from './dto/DeviceNotification.dto';
 
@@ -14,7 +16,9 @@ export class MqttService {
     private storageService: StorageService,
     private websocketGateway: WebsocketGateway,
     private devicesService: DevicesService,
+    private subscriptionsService: SubscriptionsService,
     @InjectQueue('notifications') private notificationsQueue: Queue,
+    @InjectQueue('mail') private mailQueue: Queue,
   ) {}
 
   async handleDeviceNotification(data: DeviceNotificationDto) {
@@ -39,8 +43,9 @@ export class MqttService {
 
   async handleDeviceConnected(data: { device: string }) {
     this.logger.debug(`Device connected: ${data.device}`);
+    const device = await this.devicesService._findById(data.device);
     this.websocketGateway.server
-      .to(['admin'])
+      .to(device ? ['admin', device.subscription.toString()] : ['admin'])
       .emit('device/connection/connected', {
         device: data.device,
         timestamp: new Date(Date.now()),
@@ -50,14 +55,27 @@ export class MqttService {
   async handleDeviceAuthenticationSuccess(data: { device: string }) {
     this.logger.debug(`Device authentication success: ${data.device}`);
     const device = await this.devicesService._findById(data.device);
-    if (device) {
-      this.websocketGateway.server
-        .to(['admin', device.subscription.toString()])
-        .emit('device/authentication/success', {
-          device: data.device,
-          timestamp: new Date(Date.now()),
-        });
-    }
+    if (!device) return;
+
+    this.websocketGateway.server
+      .to(['admin', device.subscription.toString()])
+      .emit('device/authentication/success', {
+        device: data.device,
+        timestamp: new Date(Date.now()),
+      });
+
+    const subscription = await this.subscriptionsService
+      ._findById(device.subscription as string)
+      .populate(['admin', 'users']);
+    if (!subscription) return;
+
+    const admin = subscription.admin as UserDocument;
+    const users = subscription.users as UserDocument[];
+    // const users_mails = [admin.email, ...users.map((u) => u.email)];
+    await this.mailQueue.add('device-connected', {
+      device,
+      users: [admin, ...users],
+    });
   }
 
   async handleDeviceAuthenticationFailed(data: { device: string }) {
@@ -80,6 +98,22 @@ export class MqttService {
         device: data.device,
         timestamp: new Date(Date.now()),
       });
+
+    if (!device) return;
+
+    const subscription = await this.subscriptionsService
+      ._findById(device.subscription as string)
+      .populate(['admin', 'users']);
+
+    if (!subscription) return;
+
+    const admin = subscription.admin as UserDocument;
+    const users = subscription.users as UserDocument[];
+    // const users_mails = [admin.email, ...users.map((u) => u.email)];
+    await this.mailQueue.add('device-connection-lost', {
+      device,
+      users: [admin, ...users],
+    });
   }
 
   async handleDeviceDisconnected(data: { device: string }) {
@@ -91,5 +125,25 @@ export class MqttService {
         device: data.device,
         timestamp: new Date(Date.now()),
       });
+
+    // if (device) {
+    //   await this.mailQueue.add('device-disconnected', device);
+    // }
+      //
+    if (!device) return;
+
+    const subscription = await this.subscriptionsService
+      ._findById(device.subscription as string)
+      .populate(['admin', 'users']);
+
+    if (!subscription) return;
+
+    const admin = subscription.admin as UserDocument;
+    const users = subscription.users as UserDocument[];
+    // const users_mails = [admin.email, ...users.map((u) => u.email)];
+    await this.mailQueue.add('device-disconnected', {
+      device,
+      users: [admin, ...users],
+    });
   }
 }

@@ -33,6 +33,7 @@ async function bootstrap() {
     transport: Transport.MQTT,
     options: {
       url: process.env.MQTT_URL,
+      clientId: 'srv_backend',
     },
   });
 

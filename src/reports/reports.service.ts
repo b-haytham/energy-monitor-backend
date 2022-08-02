@@ -53,7 +53,7 @@ export class ReportsService {
       throw new NotFoundException('Subscription Not Found');
     }
 
-    await this.reportsQueue.add('reports', subscription);
+    await this.reportsQueue.add('report-generate', subscription);
 
     return subscription;
   }
@@ -93,9 +93,9 @@ export class ReportsService {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="${name}"`,
       });
-    return new StreamableFile(file);
+      return new StreamableFile(file);
     } catch (error) {
-      this.logger.error(error);      
+      this.logger.error(error);
       throw error;
     }
   }

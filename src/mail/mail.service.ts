@@ -4,8 +4,33 @@ import { ConfigService } from '@nestjs/config';
 import { join } from 'path';
 import { AlertDocument } from 'src/alerts/entities/alert.entity';
 import { TriggeredAlertsDocument } from 'src/alerts/entities/triggered-alerts.entity';
+import { DeviceDocument } from 'src/devices/entities/device.entity';
 import { ReportDocument } from 'src/reports/entities/report.entity';
 import { UserDocument } from 'src/users/entities/user.entity';
+
+export type SendForgotPasswordData = {
+  token: string;
+  user: UserDocument;
+};
+
+export type SendReportDoneData = {
+  report: ReportDocument;
+  users: UserDocument[];
+};
+
+export type SendTriggeredAlertData = {
+  triggered_alert: TriggeredAlertsDocument;
+  user: UserDocument;
+  alert: AlertDocument;
+};
+
+export type SendDeviceConnectedData = {
+  device: DeviceDocument;
+  users: UserDocument[];
+};
+
+export type SendDeviceConnectionLostData = SendDeviceConnectedData;
+export type SendDeviceDisconnectedData = SendDeviceConnectedData;
 
 @Injectable()
 export class MailService {
@@ -48,12 +73,20 @@ export class MailService {
     });
   }
 
-  async sendReportDone(data: { users: string[]; report: ReportDocument }) {
+  async sendReportDone(data: SendReportDoneData) {
+    const client_url = this.configService.get<string>('CLIENT_URL');
+    const date = new Date(data.report.date);
     return this.mailerService.sendMail({
-      to: data.users,
-      subject: 'Report',
+      to: data.users.map((u) => u.email),
+      subject: 'New Report',
       template: './report-mail',
-      context: {},
+      context: {
+        report: {
+          ...data.report,
+          date: date.getFullYear() + '-' + date.getMonth(),
+        },
+        base_url: client_url,
+      },
       attachments: [
         {
           path: join(__dirname, '..') + data.report.file.path,
@@ -63,15 +96,75 @@ export class MailService {
     });
   }
 
-  async sendTriggeredAlert(triggered_alert: TriggeredAlertsDocument) {
-    const user = (triggered_alert.alert as AlertDocument).user as UserDocument;
+  async sendTriggeredAlert(data: SendTriggeredAlertData) {
+    const client_url = this.configService.get<string>('CLIENT_URL');
     return this.mailerService.sendMail({
-      to: user.email,
+      to: data.user.email,
       subject: 'Triggered Alert',
       template: './triggered-alert',
       context: {
-        triggered_alert,
+        triggered_alert: data.triggered_alert,
+        user: data.user,
+        alert: data.alert,
+        base_url: client_url,
       },
     });
+  }
+
+  async sendDeviceConnected(data: SendDeviceConnectedData) {
+    const client_url = this.configService.get<string>('CLIENT_URL');
+
+    const promises = data.users.map((user) => {
+      return this.mailerService.sendMail({
+        to: user.email,
+        subject: 'Device Connected',
+        template: './device-connected',
+        context: {
+          device: data.device,
+          user,
+          base_url: client_url,
+        },
+      });
+    });
+
+    return Promise.all(promises);
+  }
+
+  async sendDeviceConnectionLost(data: SendDeviceConnectionLostData) {
+    const client_url = this.configService.get<string>('CLIENT_URL');
+
+    const promises = data.users.map((user) => {
+      return this.mailerService.sendMail({
+        to: user.email,
+        subject: 'Device Connection Lost',
+        template: './device-connection-lost',
+        context: {
+          device: data.device,
+          user,
+          base_url: client_url,
+        },
+      });
+    });
+
+    return Promise.all(promises);
+  }
+
+  async sendDeviceDisconnected(data: SendDeviceDisconnectedData) {
+    const client_url = this.configService.get<string>('CLIENT_URL');
+
+    const promises = data.users.map((user) => {
+      return this.mailerService.sendMail({
+        to: user.email,
+        subject: 'Device Disconnected',
+        template: './device-disconnected',
+        context: {
+          device: data.device,
+          user,
+          base_url: client_url,
+        },
+      });
+    });
+
+    return Promise.all(promises);
   }
 }
