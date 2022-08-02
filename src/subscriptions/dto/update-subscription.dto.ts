@@ -4,6 +4,7 @@ import {
   IsNumber,
   IsNumberString,
   IsObject,
+  IsOptional,
   IsString,
   ValidateIf,
   ValidateNested,
@@ -17,17 +18,20 @@ export class UpdateSubscriptionInfoDto {
   @IsString()
   name: string;
 
+  @IsOptional()
   @IsString()
   email: string;
 
   @IsString()
   phone: string;
 
+  @IsOptional()
   @IsObject()
   @ValidateNested()
   @Type(() => AddressDto)
   address: AddressDto;
 
+  @IsOptional()
   @IsFile()
   @HasMimeType(['image/jpeg', 'image/png'])
   logo: FileSystemStoredFile;

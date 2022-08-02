@@ -157,6 +157,10 @@ export class SubscriptionsService {
     }
 
     const subscription = await this._findById(id);
+    this.logger.debug('SUBSC >>', subscription);
+    if (!subscription) {
+      throw new NotFoundException('Subscription Not Found');
+    }
 
     if (
       loggedInUser.role.includes('user') &&
@@ -166,23 +170,30 @@ export class SubscriptionsService {
       throw new ForbiddenException();
     }
 
-    const file_path = updateSubscriptionInfoDto.logo.path;
+    let parsed: any;
+    if (updateSubscriptionInfoDto.logo) {
+      const file_path = updateSubscriptionInfoDto.logo.path;
 
-    const parsed = parse(file_path);
-    console.log(parsed);
+      parsed = parse(file_path);
+      console.log(parsed);
+    }
 
     const company_info: CompanyInfo = {
       name: updateSubscriptionInfoDto.name,
-      email: updateSubscriptionInfoDto.email,
+      email: updateSubscriptionInfoDto.email || subscription.company_info.email,
       phone: updateSubscriptionInfoDto.phone,
-      address: {
-        ...subscription.company_info.address,
-        ...updateSubscriptionInfoDto.address,
-      },
-      logo: {
-        filename: parsed.base,
-        path: `/assets/images/${parsed.base}`,
-      },
+      address: updateSubscriptionInfoDto.address
+        ? {
+            ...subscription.company_info.address,
+            ...updateSubscriptionInfoDto.address,
+          }
+        : subscription.company_info.address,
+      logo: updateSubscriptionInfoDto.logo
+        ? {
+            filename: parsed.base,
+            path: `/assets/images/${parsed.base}`,
+          }
+        : subscription.company_info.logo,
       energie_cost: +updateSubscriptionInfoDto.energie_cost,
       currency: updateSubscriptionInfoDto.currency,
     };

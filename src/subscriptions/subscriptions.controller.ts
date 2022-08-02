@@ -66,7 +66,7 @@ export class SubscriptionsController {
   }
 
   @UseGuards(RolesGuard)
-  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.SUPER_USER)
   @FormDataRequest({ storage: FileSystemStoredFile })
   @Patch(':id/info')
   updateInfo(
