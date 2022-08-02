@@ -22,10 +22,11 @@ export class ReportsScheduleService {
       ._findAll()
       .populate(['admin', 'users', 'devices']);
 
+    this.logger.log(
+      `Generating reports for ${subscriptions.length} subscriptions`,
+    );
+
     if (subscriptions.length > 0) {
-      this.logger.log(
-        `Generating reports for ${subscriptions.length} subscriptions`,
-      );
       await this.reportsQueue.addBulk(
         subscriptions.map((sub) => ({ name: 'report-generate', data: sub })),
       );

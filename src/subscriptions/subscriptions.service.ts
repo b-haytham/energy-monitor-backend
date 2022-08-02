@@ -157,8 +157,8 @@ export class SubscriptionsService {
     }
 
     const subscription = await this._findById(id);
-    this.logger.debug('SUBSC >>', subscription);
     if (!subscription) {
+      this.logger.error(`[Update Subscription Info]: Subscription Not Found`);
       throw new NotFoundException('Subscription Not Found');
     }
 
@@ -257,17 +257,13 @@ export class SubscriptionsService {
         subscription.delete({ session }),
       ];
 
-      console.log(promises);
-
-      const res = await Promise.all(promises);
-
-      console.log(res);
+      await Promise.all(promises);
 
       await session.commitTransaction();
       await session.endSession();
       return subscription;
     } catch (error) {
-      this.logger.error(error);
+      this.logger.error(`[Remove subscription]: ${error.message}`);
       await session.abortTransaction();
       await session.endSession();
       throw error;

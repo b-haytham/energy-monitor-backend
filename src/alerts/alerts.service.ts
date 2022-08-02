@@ -105,7 +105,9 @@ export class AlertsService {
 
     const triggeredAlerts = await this.TriggeredAlertModel.find({
       alert: alert._id,
-    }).populate(['alert']).sort({ createdAt: -1 });
+    })
+      .populate(['alert'])
+      .sort({ createdAt: -1 });
 
     return { alert, triggeredAlerts };
   }

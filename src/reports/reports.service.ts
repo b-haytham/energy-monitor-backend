@@ -36,7 +36,7 @@ export class ReportsService {
   async create(createReportDto: CreateReportDto) {
     const errors = await validate(createReportDto);
     if (errors.length > 0) {
-      this.logger.error(`Invalid data`);
+      this.logger.error(`[Create]: Invalid data`);
       throw new BadRequestException('Invalid data suplied');
     }
 
@@ -95,7 +95,7 @@ export class ReportsService {
       });
       return new StreamableFile(file);
     } catch (error) {
-      this.logger.error(error);
+      this.logger.error(`[Download report]: ${error.message}`);
       throw error;
     }
   }

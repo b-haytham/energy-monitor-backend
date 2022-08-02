@@ -24,7 +24,7 @@ export class MqttService {
   async handleDeviceNotification(data: DeviceNotificationDto) {
     // performance.mark('start');
     const device = await this.storageService.store(data);
-    this.logger.log(`device new values stored: ${device ? device._id : 'No'}`);
+    // this.logger.log(`device new values stored: ${device ? device._id : 'No'}`);
     if (device) {
       this.websocketGateway.server
         .to(['admin', device.subscription.toString() as string])
@@ -42,7 +42,7 @@ export class MqttService {
   }
 
   async handleDeviceConnected(data: { device: string }) {
-    this.logger.debug(`Device connected: ${data.device}`);
+    this.logger.log(`Device connected message: ${data.device}`);
     const device = await this.devicesService._findById(data.device);
     this.websocketGateway.server
       .to(device ? ['admin', device.subscription.toString()] : ['admin'])
@@ -53,7 +53,7 @@ export class MqttService {
   }
 
   async handleDeviceAuthenticationSuccess(data: { device: string }) {
-    this.logger.debug(`Device authentication success: ${data.device}`);
+    this.logger.log(`Device authentication success: ${data.device}`);
     const device = await this.devicesService._findById(data.device);
     if (!device) return;
 
@@ -79,7 +79,7 @@ export class MqttService {
   }
 
   async handleDeviceAuthenticationFailed(data: { device: string }) {
-    this.logger.debug(`Device authentication failed: ${data.device}`);
+    this.logger.log(`Device authentication failed: ${data.device}`);
     const device = await this.devicesService._findById(data.device);
     this.websocketGateway.server
       .to(device ? ['admin', device.subscription.toString()] : ['admin'])
@@ -90,7 +90,7 @@ export class MqttService {
   }
 
   async handleDeviceConnectionLost(data: { device: string }) {
-    this.logger.debug(`Device connection lost: ${data.device}`);
+    this.logger.log(`Device connection lost: ${data.device}`);
     const device = await this.devicesService._findById(data.device);
     this.websocketGateway.server
       .to(device ? ['admin', device.subscription.toString()] : ['admin'])
@@ -117,7 +117,7 @@ export class MqttService {
   }
 
   async handleDeviceDisconnected(data: { device: string }) {
-    this.logger.debug(`Device disconnected: ${data.device}`);
+    this.logger.log(`Device disconnected: ${data.device}`);
     const device = await this.devicesService._findById(data.device);
     this.websocketGateway.server
       .to(device ? ['admin', device.subscription.toString()] : ['admin'])
@@ -129,7 +129,7 @@ export class MqttService {
     // if (device) {
     //   await this.mailQueue.add('device-disconnected', device);
     // }
-      //
+    //
     if (!device) return;
 
     const subscription = await this.subscriptionsService

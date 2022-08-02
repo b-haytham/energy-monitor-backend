@@ -38,7 +38,7 @@ export class MailProcessor {
       });
       this.logger.log('Forgot Password Email Sent');
     } catch (error) {
-      this.logger.error(error);
+      this.logger.error(`[Forgot Password]: ${error.message}`);
     }
   }
 
@@ -52,7 +52,7 @@ export class MailProcessor {
 
       this.logger.log('Report Email Sent');
     } catch (error) {
-      this.logger.error(error);
+      this.logger.error(`[Report]: ${error.message}`);
     }
   }
 
@@ -61,7 +61,7 @@ export class MailProcessor {
     try {
       await this.mailService.sendTriggeredAlert(job.data);
     } catch (error) {
-      this.logger.error(error);
+      this.logger.error(`[Triggered Alert]: ${error.message}`);
     }
   }
 
@@ -70,7 +70,7 @@ export class MailProcessor {
     try {
       await this.mailService.sendDeviceConnected(job.data);
     } catch (error) {
-      this.logger.error(error);
+      this.logger.error(`[Device connected]: ${error.message}`);
     }
   }
 
@@ -79,7 +79,7 @@ export class MailProcessor {
     try {
       await this.mailService.sendDeviceConnectionLost(job.data);
     } catch (error) {
-      this.logger.error(error);
+      this.logger.error(`[Device connection lost]: ${error.message}`);
     }
   }
 
@@ -88,7 +88,7 @@ export class MailProcessor {
     try {
       await this.mailService.sendDeviceDisconnected(job.data);
     } catch (error) {
-      this.logger.error(error);
+      this.logger.error(`[Device disconnected]: ${error}`);
     }
   }
 }

@@ -70,13 +70,11 @@ export class UsersService {
   async findByEmailAndPassword(email: string, password: string) {
     //check if user exists
     const user = await this.UserModel.findOne({ email });
-    this.logger.debug(`User found: ${user}`);
     if (!user) {
       return null;
     }
     //check if password is correct
     const isPasswordCorrect = await bcrypt.compare(password, user.password);
-    this.logger.debug(`Password correct: ${isPasswordCorrect}`);
     if (!isPasswordCorrect) {
       return null;
     }
@@ -232,7 +230,7 @@ export class UsersService {
       await session.endSession();
       return user;
     } catch (error) {
-      this.logger.error(error);
+      this.logger.error(`[Remove user]: ${error.message}`);
       await session.abortTransaction();
       await session.endSession();
       throw error;
@@ -246,15 +244,10 @@ export class UsersService {
     const loggedInUserSubscriptionId = (
       loggedInUser.subscription as SubscriptionDocument
     )._id;
+
     const userToUpdateSubscriptionId = (
       user.subscription as SubscriptionDocument
     )._id;
-    this.logger.debug(
-      `loggedInUserSubscriptionId : ${loggedInUserSubscriptionId}`,
-    );
-    this.logger.debug(
-      `userToUpdateSubscriptionId : ${userToUpdateSubscriptionId}`,
-    );
 
     if (
       loggedInUser.role == UserRole.SUPER_USER &&

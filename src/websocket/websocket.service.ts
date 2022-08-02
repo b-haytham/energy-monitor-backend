@@ -20,7 +20,9 @@ export class WebsocketService {
     const user = await this.usersService.findById(decoded.sub, {});
 
     if (!user) {
-      this.logger.error(`User with id ${decoded.sub} not found`);
+      this.logger.error(
+        `[Authentocicate]: User with id ${decoded.sub} not found`,
+      );
       throw new Error('User not found');
     }
 
@@ -46,10 +48,10 @@ export class WebsocketService {
     const decoded = await this.jwtService.verify(authenticateDto.access_token);
 
     const user = await this.usersService.findById(decoded.sub, {});
-    this.logger.debug(`logout user ${user ? user._id : user}`);
+    // this.logger.debug(`logout user ${user ? user._id : user}`);
 
     if (!user) {
-      this.logger.error(`User with id ${decoded.sub} not found`);
+      this.logger.error(`[Logout]: User with id ${decoded.sub} not found`);
       throw new Error('User not found');
     }
 

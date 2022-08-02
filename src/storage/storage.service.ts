@@ -73,11 +73,11 @@ export class StorageService {
         },
       ]);
 
-      performance.mark('start');
+      // performance.mark('start');
       const result = await Promise.allSettled([savePromise, storagePromise]);
-      performance.mark('end');
-      performance.measure('insert', 'start', 'end');
-      this.logger.debug(JSON.stringify(result.map((res) => res.status)));
+      // performance.mark('end');
+      // performance.measure('insert', 'start', 'end');
+      this.logger.log(JSON.stringify(result.map((res) => res.status)));
     }
     return device;
   }

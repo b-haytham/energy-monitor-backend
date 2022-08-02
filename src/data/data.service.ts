@@ -65,7 +65,7 @@ export class DataService {
       this.logger.error(`Device ${query.d} not found`);
       throw new BadRequestException('Device not found');
     }
-    this.logger.debug(options.req.user);
+    // this.logger.debug(options.req.user);
 
     this.checkIsAuthorized(device, query, options);
     return this._energieConsumptionAggregation(device._id, query.t);
@@ -94,33 +94,9 @@ export class DataService {
       this.logger.error(`Device ${query.d} not found`);
       throw new BadRequestException('Device not found');
     }
-    this.logger.debug(options.req.user);
+    // this.logger.debug(options.req.user);
 
     this.checkIsAuthorized(device, query, options);
-
-    const match = this.aggregationUtils.getMatchStage(query.t, {
-      's.d': device._id,
-      's.v': 'e',
-    });
-    const group = this.aggregationUtils.getGroupStage(
-      query.t,
-      {
-        max: { $last: '$v' },
-      },
-      true,
-    );
-
-    const windowStage = this.aggregationUtils.getWindowingStage();
-
-    const addFields = this.aggregationUtils.getAddFieldsStage();
-
-    const pipeline = [match, group, windowStage, addFields];
-
-    const StorageModel = this.storageService.getStorageModel();
-
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    //@ts-ignore
-    // return StorageModel.aggregate(pipeline);
 
     return this._energieConsumptionAggregation(device._id, query.t, true);
   }
@@ -132,24 +108,6 @@ export class DataService {
   ) {
     const deviceId =
       typeof device === 'string' ? new mongoose.Types.ObjectId(device) : device;
-
-    const match = this.aggregationUtils.getMatchStage(time, {
-      's.d': deviceId,
-      's.v': 'e',
-    });
-    const group = this.aggregationUtils.getGroupStage(
-      time,
-      {
-        max: { $last: '$v' },
-      },
-      isExactTime ? true : false,
-    );
-
-    const windowStage = this.aggregationUtils.getWindowingStage();
-
-    const addFields = this.aggregationUtils.getAddFieldsStage();
-
-    const pipeline = [match, group, windowStage, addFields];
 
     const StorageModel = this.storageService.getStorageModel();
 

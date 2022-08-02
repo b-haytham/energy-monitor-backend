@@ -14,7 +14,7 @@ import { WsValidationPipe } from './ws-validation.pipe';
 
 @WebSocketGateway({ cors: true })
 export class WebsocketGateway {
-  private readonly logger = new Logger(WebSocketGateway.name);
+  // private readonly logger = new Logger(WebSocketGateway.name);
 
   @WebSocketServer()
   server: Server;

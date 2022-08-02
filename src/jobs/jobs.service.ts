@@ -40,12 +40,6 @@ export class JobsService {
   // add documentation
   async generateReport(subscription: SubscriptionDocument) {
     this.logger.debug(`[Generate Report]: subscription: ${subscription._id}`);
-    this.logger.debug(
-      `[Generate Report]: subscription info: ${JSON.stringify(
-        // eslint-disable-next-line prettier/prettier
-        subscription.company_info
-      )}`,
-    );
 
     const devices = subscription.devices as DeviceDocument[];
 
@@ -140,7 +134,7 @@ export class JobsService {
     try {
       await this.createPdf({ html, output_path: pdf_path, stylessheet_path });
     } catch (error) {
-      this.logger.error(error);
+      this.logger.error(`[Create Pdf]:  ${error.message}`);
       throw error;
     }
 
@@ -169,7 +163,7 @@ export class JobsService {
     device: DeviceDocument;
     notification: DeviceNotificationDto;
   }) {
-    this.logger.log('Handling notification');
+    this.logger.log('Process device notification');
     const alerts = await this.alertsService
       ._findByDevice(data.notification.d)
       .populate(['user', 'device']);
@@ -188,9 +182,6 @@ export class JobsService {
         (triggeredAlert.alert as AlertDocument).user = alert.user;
         alert.trigger_count += 1;
         await alert.save();
-        this.logger.debug(
-          `userId >> ${(alert.user as UserDocument)._id.toString()}`,
-        );
 
         await this.mailQueue.add('alert-triggered', {
           triggered_alert: triggeredAlert,

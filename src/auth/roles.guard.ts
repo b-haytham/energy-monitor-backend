@@ -44,7 +44,7 @@ export class RolesGuard implements CanActivate {
       request.session['access_token'];
 
     if (!token) {
-      this.logger.error('No token');
+      this.logger.error('No token Provided');
       return false;
     }
 
