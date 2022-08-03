@@ -42,6 +42,10 @@ export class MailService {
   ) {}
 
   async sendConfirmMail(user: string, email: string, url: string) {
+    if (!this.checkMailConfig()) {
+      this.logger.error('No smtp configuration');
+      return;
+    }
     return this.mailerService.sendMail({
       to: email,
       subject: 'Welcome to Nice App! Confirm your Email',
@@ -59,6 +63,11 @@ export class MailService {
     email: string;
     name: string;
   }) {
+    if (!this.checkMailConfig()) {
+      this.logger.error('No smtp configuration');
+      return;
+    }
+
     const base_url = this.configService.get('RESET_PASSWORD_URL');
     const url = `${base_url}?token=${data.token}&user=${data.user_id}`;
     return this.mailerService.sendMail({
@@ -74,6 +83,11 @@ export class MailService {
   }
 
   async sendReportDone(data: SendReportDoneData) {
+    if (!this.checkMailConfig()) {
+      this.logger.error('No smtp configuration');
+      return;
+    }
+
     const client_url = this.configService.get<string>('CLIENT_URL');
     const date = new Date(data.report.date);
     return this.mailerService.sendMail({
@@ -97,6 +111,11 @@ export class MailService {
   }
 
   async sendTriggeredAlert(data: SendTriggeredAlertData) {
+    if (!this.checkMailConfig()) {
+      this.logger.error('No smtp configuration');
+      return;
+    }
+
     const client_url = this.configService.get<string>('CLIENT_URL');
     return this.mailerService.sendMail({
       to: data.user.email,
@@ -112,6 +131,11 @@ export class MailService {
   }
 
   async sendDeviceConnected(data: SendDeviceConnectedData) {
+    if (!this.checkMailConfig()) {
+      this.logger.error('No smtp configuration');
+      return;
+    }
+
     const client_url = this.configService.get<string>('CLIENT_URL');
 
     const promises = data.users.map((user) => {
@@ -131,6 +155,11 @@ export class MailService {
   }
 
   async sendDeviceConnectionLost(data: SendDeviceConnectionLostData) {
+    if (!this.checkMailConfig()) {
+      this.logger.error('No smtp configuration');
+      return;
+    }
+
     const client_url = this.configService.get<string>('CLIENT_URL');
 
     const promises = data.users.map((user) => {
@@ -150,6 +179,11 @@ export class MailService {
   }
 
   async sendDeviceDisconnected(data: SendDeviceDisconnectedData) {
+    if (!this.checkMailConfig()) {
+      this.logger.error('No smtp configuration');
+      return;
+    }
+
     const client_url = this.configService.get<string>('CLIENT_URL');
 
     const promises = data.users.map((user) => {
@@ -166,5 +200,16 @@ export class MailService {
     });
 
     return Promise.all(promises);
+  }
+
+  private checkMailConfig(): boolean {
+    const host = this.configService.get<string>('SMTP_HOST');
+    const port = this.configService.get<string>('SMTP_PORT');
+    const user = this.configService.get<string>('SMTP_USER');
+    const password = this.configService.get<string>('SMTP_PASSWORD');
+
+    if (!host || !port || !user || !password) return false;
+
+    return true;
   }
 }
