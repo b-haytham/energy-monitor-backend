@@ -3,15 +3,17 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Queue } from 'bull';
 import { DataService } from 'src/data/data.service';
 import { DeviceDocument } from 'src/devices/entities/device.entity';
-import { ReportFile, ReportItem } from 'src/reports/entities/report.entity';
+import {
+  ReportDocument,
+  ReportFile,
+  ReportItem,
+} from 'src/reports/entities/report.entity';
 import { ReportsService } from 'src/reports/reports.service';
 import { SubscriptionDocument } from 'src/subscriptions/entities/subscription.entity';
 
-import { readFileSync } from 'fs';
+import { writeFile } from 'fs/promises';
 import { join } from 'path';
-import { compile as compileTemplate } from 'handlebars';
 
-import * as puppeteer from 'puppeteer';
 import { DeviceNotificationDto } from 'src/mqtt/dto/DeviceNotification.dto';
 import { AlertsService } from 'src/alerts/alerts.service';
 import {
@@ -88,55 +90,20 @@ export class JobsService {
       date: new Date(Date.now()),
     });
 
-    const template_path = join(
-      __dirname,
-      '..',
-      'assets',
-      'templates',
-      'report.hbs',
-    );
-
-    const html_total = report.total.toFixed(2) + ' (kw/h)';
-    const html_cost = `${report.cost.toFixed(2)} ${
-      subscription.company_info.currency
-        ? subscription.company_info.currency
-        : ''
-    }`;
-
-    const html_items = report.items.map((it) => ({
-      ...it,
-      cost: `${it.cost.toFixed(2)} ${
-        subscription.company_info.currency
-          ? subscription.company_info.currency
-          : ''
-      }`,
-      consumed: it.consumed + ' (kw/h)',
-    }));
-
-    const html = this.compileTemplate(template_path, {
-      total: html_total,
-      cost: html_cost,
-      items: html_items,
-      date: report.date.getFullYear() + '-' + report.date.getMonth(),
-      subscription: subscription.company_info,
-    });
-
     const pdf_name = `report-${Date.now()}.pdf`;
     const pdf_path = join(__dirname, '..', 'assets', pdf_name);
-    const stylessheet_path = join(
-      __dirname,
-      '..',
-      'assets',
-      'css',
-      'report.css',
-    );
-
+    //----------
     try {
-      await this.createPdf({ html, output_path: pdf_path, stylessheet_path });
+      const resp = await this.generatePdf({
+        report,
+        company_info: subscription.company_info,
+        output_path: pdf_path,
+      });
+      this.logger.debug(`[Generate Pdf]: Success ${resp}`);
     } catch (error) {
-      this.logger.error(`[Create Pdf]:  ${error.message}`);
-      throw error;
+      this.logger.error(`[Generate Pdf DEBUF]:  ${error.message}`);
     }
+    //---------
 
     const report_file: ReportFile = {
       name: pdf_name,
@@ -234,39 +201,127 @@ export class JobsService {
     }
   }
 
-  private compileTemplate(path: string, data: any) {
-    const template = readFileSync(path);
-    const compiled = compileTemplate(template.toString('utf8'));
-    return compiled(data);
+  private async generatePdf({
+    report,
+    company_info,
+    output_path,
+  }: {
+    report: ReportDocument;
+    company_info: SubscriptionDocument['company_info'];
+    output_path: string;
+  }) {
+    return new Promise(async (resolve, reject) => {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const logo_path = join(
+        __dirname,
+        '..',
+        'assets',
+        'images',
+        'logo-text.png',
+      );
+
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const PdfDocument = require('pdfkit-table');
+      const doc = new PdfDocument({ size: 'A4', margin: 20 });
+
+      // doc.pipe(createWriteStream(output_path));
+
+      doc.image(logo_path, 20, 20, { width: 80 });
+
+      doc.moveDown();
+      doc.moveDown();
+      doc.moveDown();
+
+      doc.fontSize(12);
+
+      doc.text(company_info.name);
+      doc.moveDown();
+      doc.text(company_info.email);
+      doc.text(company_info.phone);
+      doc.moveDown();
+      doc.text(
+        [
+          company_info.address.street,
+          company_info.address.city,
+          company_info.address.zip,
+          company_info.address.country,
+        ].join(', '),
+      );
+
+      doc.moveDown();
+      doc.moveDown();
+
+      doc.fontSize(20);
+
+      doc.text(
+        `Report (${report.date.getFullYear() + '-' + report.date.getMonth()})`,
+      );
+
+      doc.moveDown();
+
+      await this.createTable(report, company_info, doc);
+
+      this.waitPdfDocEnd(doc)
+        .then((buf: any) => {
+          writeFile(output_path, buf)
+            .then(() => resolve(output_path))
+            .catch(reject);
+        })
+        .catch(reject);
+
+      doc.end();
+    });
   }
 
-  private async createPdf(data: {
-    html: string;
-    output_path: string;
-    stylessheet_path?: string;
-  }) {
-    const br = await puppeteer.launch({ headless: true });
-    const page = await br.newPage();
-    await page.setContent(data.html);
-    // todo add style tag
-
-    if (data.stylessheet_path) {
-      await page.addStyleTag({ path: data.stylessheet_path });
-    }
-
-    await page.pdf({
-      format: 'a4',
-      path: data.output_path,
-      pageRanges: '1',
-      printBackground: true,
-      preferCSSPageSize: true,
-      margin: {
-        top: 20,
-        right: 20,
-        left: 20,
-      },
+  private async waitPdfDocEnd(doc: any) {
+    return new Promise((resolve, reject) => {
+      const buffers: any[] = [];
+      doc.on('data', buffers.push.bind(buffers));
+      doc.on('end', async () => {
+        const pdfBuffer = Buffer.concat(buffers);
+        resolve(pdfBuffer);
+      });
+      doc.on('error', reject);
     });
+  }
 
-    await br.close();
+  private async createTable(
+    report: ReportDocument,
+    company_info: SubscriptionDocument['company_info'],
+    doc: any,
+  ) {
+    const items = report.items.map((it) => ({
+      device: it.device_name,
+      consumed: it.consumed.toFixed(2) + ' kw/h',
+      cost: it.cost.toFixed(2) + ` ${company_info.currency || ''}`,
+    }));
+
+    const total_row = {
+      device: 'Total',
+      consumed: report.total.toFixed(2) + ' kw/h',
+      cost: report.cost.toFixed(2) + ` ${company_info.currency || ''}`,
+    };
+
+    // table
+    const table = {
+      headers: [
+        { label: 'Device', property: 'device' },
+        { label: 'Consumed', property: 'consumed' },
+        { label: 'Cost', property: 'cost' },
+      ],
+      datas: [...items, total_row],
+    };
+
+    await doc.table(table, {
+      padding: 50,
+      // y: 100
+      minRowHeight: 20,
+      divider: {
+        header: { disabled: false, width: 0.5, opacity: 0.5 },
+        horizontal: { disabled: false, width: 0.5, opacity: 0.5 },
+      },
+      prepareHeader: () => doc.fontSize(12),
+      prepareRow: () => doc.fontSize(10),
+    });
   }
 }
