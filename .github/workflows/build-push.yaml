@@ -1,0 +1,28 @@
+name: "Build & Push Container"
+on:
+  push:
+    branches:
+      - "main"
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout code"
+        uses: actions/checkout@main
+      
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+
+      - name: "Get Version From package.json"
+        uses: Saionaro/extract-package-version@v1.0.6
+        id: package_version
+
+      - name: Build and push
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/energy-monitor-backend:${{ steps.package_version.outputs.version }},bhaytham/energy-monitor-backend:latest 
