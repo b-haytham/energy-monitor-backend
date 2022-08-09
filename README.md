@@ -1,40 +1,8 @@
-# Energie Backend
+# Energy Monitor Backend
+
+This is an api part or [Energy Monitor](https://github.com/b-haytham/energy-monitor) to manage and process connected devices messages. built with [Nestjs](https://nestjs.com/) framework.
+
+Checkout [Energy Monitor](https://github.com/b-haytham/energy-monitor) application for more information.
 
 
-## Description
-backend of energie monitor platform
 
-## Installation
-
-```bash
-$ npm install
-```
-
-## Running the app
-
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
-```
-
-## Test
-
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Todo
- 
